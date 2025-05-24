@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ma Bibliothèque</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html">Accueil</a>
+    <a href="bibliotheque.html">Ma Bibliothèque</a>
+    <a href="recherche.html">Recherche</a>
+  </nav>
+
+  <main>
+    <h1>Ma Bibliothèque</h1>
+    <div id="filtre-container">
+    <label for="filtre-statut">Filtrer par statut :</label>
+    <select id="filtre-statut">
+        <option value="Tous">Tous</option>
+        <option value="À lire">À lire</option>
+        <option value="En cours">En cours</option>
+        <option value="Terminé">Terminé</option>
+    </select>
+    </div>
+    <div id="bibli-actions">
+        <button id="export-csv">Exporter en CSV</button>
+        <label for="import-csv" class="custom-file-upload">Importer un CSV</label>
+        <input type="file" id="import-csv" accept=".csv" style="display:none;">
+        <button id="enrichir-fiches">Compléter les fiches</button>
+        <div id="chargement-enrichissement" style="display: none; margin-top: 10px;">
+            <p>🔄 Enrichissement des livres en cours...</p>
+        </div>
+
+    </div>
+
+    <div id="library"></div>
+  </main>
+
+  <script src="script.js"></script>
+
+  <div id="edit-popup" class="popup" style="display:none;">
+  <div class="popup-content">
+    <span class="close-button" id="edit-close">&times;</span>
+
+    <h2>Modifier le livre</h2>
+
+    <div class="edit-block">
+      <p id="edit-title" class="edit-title"></p>
+      <p id="edit-authors" class="edit-authors"></p>
+    </div>
+
+    <div class="edit-block">
+        <label>Genre :</label>
+        <p id="edit-genre-text" class="edit-genre-text"></p>
+    </div>
+
+
+    <div class="edit-block">
+      <label>Résumé :</label>
+      <div id="edit-desc-text" class="edit-description"></div>
+    </div>
+
+    <div class="edit-line">
+  <div class="edit-field">
+    <label for="edit-status">Statut :</label>
+    <select id="edit-status">
+      <option value="À lire">À lire</option>
+      <option value="En cours">En cours</option>
+      <option value="Terminé">Terminé</option>
+    </select>
+  </div>
+
+  <div class="edit-field">
+    <label for="edit-note">Note (sur 5) :</label>
+    <input type="number" id="edit-note" min="1" max="5">
+  </div>
+</div>
+
+<div class="edit-line">
+  <div class="edit-field">
+    <label for="edit-start">Début :</label>
+    <input type="date" id="edit-start">
+  </div>
+
+  <div class="edit-field">
+    <label for="edit-end">Fin :</label>
+    <input type="date" id="edit-end">
+  </div>
+</div>
+
+
+    <div class="edit-buttons">
+      <button id="edit-save">Enregistrer</button>
+      <button id="edit-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>
+

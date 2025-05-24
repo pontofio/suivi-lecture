@@ -1,0 +1,685 @@
+/* === STYLES GENERAUX === */
+/* Configuration de base du body : police, couleurs, marges */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #fdfdfd;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+/* Style des titres principaux */
+h1, h2 {
+  text-align: center;
+  color: #444;
+}
+
+/* === NAVIGATION === */
+/* Barre de navigation horizontale avec liens centrés */
+nav {
+  padding: 20px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+/* Liens de navigation avec effet hover */
+nav a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+
+nav a:hover {
+  color: #e0bbff;
+}
+
+/* Menu horizontal avec flexbox */
+nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* === FORMULAIRES === */
+/* Layout flexible pour les formulaires avec centrage */
+form {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+/* Style uniforme pour tous les champs de saisie */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+/* Style uniforme pour tous les boutons */
+button {
+  background-color: #e0bbff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  color: #333;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background-color: #d6aaff;
+}
+
+/* État désactivé des boutons */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* === PAGE RECHERCHE === */
+/* Conteneur principal des résultats de recherche */
+#result {
+  border: 1px solid #eee;
+  background-color: #fff8ff;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  min-height: 200px; /* Hauteur minimum pour contenir les images */
+}
+
+/* Chaque résultat de livre avec image à gauche */
+.result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  min-height: 120px; /* Hauteur minimum pour l'image */
+}
+
+/* Image de couverture du livre dans les résultats */
+.result-item img {
+  width: 80px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0; /* Empêche l'image de rétrécir */
+}
+
+/* Conteneur des informations textuelles du livre */
+.result-item .book-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* Conteneur image + bouton */
+.image-and-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+
+/* Titre du livre dans les résultats */
+.result-item h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+/* Auteur du livre dans les résultats */
+.result-item h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* Description du livre dans les résultats */
+.result-item p {
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #555;
+}
+
+/* Bouton d'ajout à la bibliothèque */
+.add-button {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.add-button:hover {
+  background-color: #c3e6cb;
+}
+
+/* === PAGE D'ACCUEIL - DASHBOARD === */
+/* Conteneur principal de la page d'accueil */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Layout principal du tableau de bord en deux colonnes */
+.dashboard {
+  display: flex;
+  min-height: calc(100vh - 80px);
+  gap: 20px;
+  padding: 20px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Colonne gauche : graphiques et stats */
+.dashboard-left {
+  flex: 1;
+  padding-right: 30%;
+}
+
+/* Colonne droite fixe : derniers livres lus */
+.dashboard-right {
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  width: 25%;
+  bottom: 50px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px 15px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.dashboard-right h2 {
+  margin-top: 0;
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+}
+
+/* === AFFICHAGE DES LIVRES DANS LA SIDEBAR === */
+/* Livre individuel dans la sidebar droite */
+.dashboard-right .grid-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+}
+
+/* Image de couverture dans la sidebar */
+.dashboard-right .grid-item img {
+  width: 65px;
+  height: 100px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+/* Informations textuelles du livre dans la sidebar */
+.dashboard-right .grid-item .book-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-right .grid-item .book-info p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.dashboard-right .grid-item .book-info p:first-child {
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #333;
+}
+
+/* Bouton de suppression dans la sidebar */
+.dashboard-right .delete-button {
+  background-color: #ffe0e0;
+  color: #a00;
+  font-size: 0.7rem;
+  border-radius: 3px;
+  padding: 3px 6px;
+  border: none;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+/* Conteneur pour les derniers livres */
+#derniers-livres {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* === GRAPHIQUES === */
+/* Conteneur pour les graphiques de statistiques */
+.graph-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+/* Configuration des canvas pour les graphiques */
+canvas {
+  margin-bottom: 30px;
+  max-width: 100%;
+  height: 300px !important;
+}
+
+.graph-container canvas {
+  flex: 1 1 45%;
+  max-width: 500px;
+  min-width: 280px;
+}
+
+/* === PAGE BIBLIOTHEQUE === */
+/* Grille d'affichage des livres dans la bibliothèque */
+#library {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Conteneur du filtre par statut */
+#filtre-container {
+  text-align: center;
+  margin-top: 10px;
+}
+
+#filtre-container label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+#filtre-statut {
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+/* Barre d'actions de la bibliothèque (export, import, enrichir) */
+#bibli-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+#bibli-actions button,
+.custom-file-upload {
+  background-color: #c9a0ff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#bibli-actions button:hover,
+.custom-file-upload:hover {
+  background-color: #a774d3;
+}
+
+/* === AFFICHAGE DES LIVRES === */
+/* Carte individuelle d'un livre */
+.grid-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  background-color: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.grid-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Image de couverture dans les cartes de livres */
+.grid-item img {
+  width: 80px;
+  height: auto;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+/* Informations textuelles dans les cartes de livres */
+.grid-item .book-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-item .book-info p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.grid-item .book-info p:first-child {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #333;
+}
+
+.grid-item .book-info p:nth-child(2) {
+  color: #666;
+  font-style: italic;
+}
+
+/* Bouton de suppression dans les cartes */
+.delete-button {
+  background-color: #ffe0e0;
+  color: #a00;
+  font-size: 0.8rem;
+  border-radius: 5px;
+  padding: 5px 10px;
+  border: none;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #ffcccc;
+}
+
+/* === POPUPS === */
+/* Overlay sombre pour les popups modales */
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Contenu principal des popups */
+.popup-content {
+  width: 75%;
+  height: 80%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  animation: popupShow 0.3s ease-out;
+  position: relative;
+}
+
+/* Animation d'apparition des popups */
+@keyframes popupShow {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Titre des popups */
+.popup-content h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Labels dans les popups */
+.popup-content label {
+  margin-top: 10px;
+  display: block;
+  font-weight: bold;
+}
+
+/* Champs de saisie dans les popups */
+.popup-content input,
+.popup-content select {
+  width: 100%;
+  padding: 8px;
+  font-size: 1rem;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* Boutons dans les popups */
+.popup-content button {
+  margin-top: 10px;
+  margin-right: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #e0bbff;
+  color: #333;
+  transition: background 0.3s;
+}
+
+.popup-content button:hover {
+  background-color: #d6aaff;
+}
+
+/* Bouton de fermeture (X) des popups */
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  background-color: #ffbbbb;
+  color: #660000;
+  font-weight: bold;
+  font-size: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.close-button:hover {
+  background-color: #ff4444;
+  color: white;
+}
+
+/* === POPUP D'EDITION === */
+/* Blocs d'informations dans la popup d'édition */
+.edit-block {
+  margin-bottom: 15px;
+}
+
+.edit-block label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Titre du livre en édition */
+.edit-title {
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}
+
+/* Auteurs en édition */
+.edit-authors {
+  font-style: italic;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+/* Genre en édition */
+.edit-genre-text {
+  font-style: italic;
+  color: #444;
+  margin-top: 5px;
+}
+
+/* Zone de description en édition */
+.edit-description {
+  max-height: 150px;
+  overflow-y: auto;
+  background: #f8f8f8;
+  padding: 10px;
+  border-radius: 8px;
+  font-style: italic;
+  border: 1px solid #ddd;
+  white-space: pre-line;
+}
+
+/* Ligne avec deux champs côte à côte */
+.edit-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+/* Champ individuel dans une ligne */
+.edit-field {
+  flex: 1;
+}
+
+.edit-field label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.edit-field input,
+.edit-field select {
+  width: 100%;
+  padding: 8px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Conteneur des boutons d'édition */
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.edit-buttons button {
+  background-color: #e0bbff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.edit-buttons button:hover {
+  background-color: #d6aaff;
+}
+
+/* === RESPONSIVE === */
+/* Adaptation pour les écrans mobiles */
+@media (max-width: 768px) {
+  /* Dashboard en colonne sur mobile */
+  .dashboard {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .dashboard-left {
+    flex: none;
+    padding-right: 0;
+  }
+  
+  /* Sidebar devient normale sur mobile */
+  .dashboard-right {
+    position: static;
+    width: 100%;
+    max-height: none;
+  }
+  
+  /* Cartes de livres en colonne sur mobile */
+  .grid-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .grid-item img {
+    width: 100px;
+    align-self: center;
+  }
+  
+  /* Champs d'édition en colonne sur mobile */
+  .edit-line {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Résultats de recherche adaptés mobile */
+  .result-item {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .result-item img {
+    width: 100px;
+    height: 150px;
+  }
+}

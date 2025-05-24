@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accueil - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <h1>Tableau de bord lecture</h1>
+
+    <div class="dashboard">
+      <!-- Partie gauche : challenge, stats, derniers livres -->
+      <div class="dashboard-left">
+        <h2>Challenge lecture</h2>
+        <p>Objectif : <strong>30 livres</strong></p>
+        <p>Progression actuelle : <span id="progression-challenge">0</span></p>
+
+       
+
+        <div class="graph-container">
+          <h2>Livres lus par mois</h2>
+          <canvas id="graph-mois" width="600" height="300"></canvas>
+
+          <h2>Livres lus par année</h2>
+          <canvas id="graph-annee" width="600" height="300"></canvas>
+        </div>
+      </div>
+
+      <!-- Partie droite : mini bibliothèque type RecyclerView -->
+      <div class="dashboard-right">
+         <h2>Mes dernières lectures</h2>
+        <div id="derniers-livres" class="grid-container"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
