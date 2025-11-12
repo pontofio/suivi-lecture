@@ -1,7 +1,21 @@
-<nav>
-  <ul>
-    <li><a href="index.html">Accueil</a></li>
-    <li><a href="bibliotheque.html">Ma bibliothèque</a></li>
-    <li><a href="recherche.html">Rechercher</a></li>
-  </ul>
+<nav class="navbar">
+  <div class="nav-left">
+    <a href="index.php">Accueil</a>
+    <a href="bibliotheque.php">Ma Bibliothèque</a>
+    <a href="recherche.php">Recherche</a>
+  </div>
+
+  <div class="nav-right">
+    <div id="menu-contextuel" class="menu-contextuel" style="display: none;">
+      <button id="menu-toggle">Actions ▾</button>
+      <div class="context-dropdown" id="dropdown-actions">
+        <button id="import-trigger">Importer</button>
+        <button id="export-csv">Exporter</button>
+        <button id="enrichir-fiches">Compléter</button>
+        <input type="file" id="import-csv" accept=".csv" style="display: none;">
+      </div>
+    </div>
+
+    <a href="logout.php" class="logout-button">Déconnexion</a>
+  </div>
 </nav>

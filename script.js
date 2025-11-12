@@ -1,634 +1,974 @@
-// Chargement du menu depuis menu.html une fois le DOM prêt
-document.addEventListener("DOMContentLoaded", () => {
-  // Vérifier si l'élément menu-placeholder existe (seulement sur index.html)
-  const menuPlaceholder = document.getElementById("menu-placeholder");
-  if (menuPlaceholder) {
-    fetch("menu.html")
-      .then(response => response.text())
-      .then(data => {
-        menuPlaceholder.innerHTML = data;
-        // Une fois le menu chargé, on lance le reste du script
-        initialiserPage();
-      })
-      .catch(error => {
-        console.error("Erreur de chargement du menu :", error);
-        // Même en cas d'erreur, initialiser la page
-        initialiserPage();
-      });
-  } else {
-    // Si pas de menu-placeholder, initialiser directement
-    initialiserPage();
+//
+// ─── script.js ───────────────────────────────────────────────────────────────────
+//
+//  Ce fichier gère :
+//   • recherche.php  → recherche Google Books + popup « Ajouter à ma bibliothèque »
+//   • bibliotheque.php → affichage/filtre/tri + popup « Modifier un livre »
+//
+
+
+// ─── 0) DÉCLARATION UNIQUE DE LA BASE URL ─────────────────────────────────────────
+const API_BASE_URL = "http://localhost/suivi-lecture";
+
+
+
+// ─── 1) CLASSE GLOBALE POUR LA BIBLIOTHÈQUE ─────────────────────────────────────
+class BibliothequeManager {
+  constructor() {
+    this.livres = [];            // liste de tous les livres (objet avec title, authors, status, note, startDate, endDate, genre, description, cover)
+    this.livreTemporaire = null; // utilisé lors de la recherche Google Books → popup « Ajouter »
+    this.livreEnCours    = null; // utilisé lors de la page Bibliothèque → popup « Modifier »
   }
-});
 
-let livreTemporaire = null; // Variable globale pour éviter les conflits
+  // 1.a) Charger la liste des livres depuis get-livre.php (et stocker en localStorage)
+  async chargerLivres() {
+    try {
+      const res  = await fetch("get-livre.php");
+      const data = await res.json();
+      console.log("→ Données brutes reçues de get-livre.php :", data.livres);
 
-function initialiserPage() {
-  // Détection de la page actuelle
-  const page = window.location.pathname;
+      if (!data.success) throw new Error(data.message);
 
-  function afficherLivre(bookData, container) {
-    const item = document.createElement("div");
-    item.classList.add("grid-item");
-    item.innerHTML = `
-      <img src="${bookData.cover || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgODAgMTAwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iMTAwIiBmaWxsPSIjZjBmMGYwIi8+CjxwYXRoIGQ9Ik0yNSAzMEg1NVYzNEgyNVYzMFpNMjUgNDBINTVWNDRIMjVWNDBaTTI1IDUwSDU1VjU0SDI1VjUwWiIgZmlsbD0iI2NjYyIvPgo8L3N2Zz4K'}" alt="Couverture">
-      <div class="book-info">
-        <p><strong>${bookData.title}</strong></p>
-        <p>${bookData.authors}</p>
-        <p><em>Statut : ${bookData.status}</em></p>
-        <p><em>Note : ${bookData.note ? bookData.note + "/5" : "Pas noté"}</em></p>
-        ${bookData.startDate ? `<p><em>Début : ${bookData.startDate}</em></p>` : ""}
-        ${bookData.endDate ? `<p><em>Fin : ${bookData.endDate}</em></p>` : ""}
-        <button class="delete-button">🗑 Supprimer</button>
-      </div>
-    `;
+      this.livres = data.livres.map(item => ({
+          title:       item.title,
+          authors:     item.authors,
+          status:      item.statut,
+          note:        parseFloat(item.note) || 0,
+          startDate:   item.date_debut,
+          endDate:     item.date_fin,
+          genre:       item.genre,
+          description: item.description,
+          cover: item.cover || ""
+
+        }));
+
+      localStorage.setItem("bibliotheque", JSON.stringify(this.livres));
+
+      // Si on est sur la page bibliotheque.php, on peut afficher immédiatement
+      if (window.location.pathname.includes("bibliotheque.php")) {
+        this.afficherLivresFiltres("Tous");
+      }
+    } catch (err) {
+      console.error("Erreur lors du chargement des livres :", err);
+    }
+  }
+
+  // 1.b) Afficher / filtrer (statut) ← utilisé dans bibliotheque.php
+  afficherLivresFiltres(statut) {
     
-    item.querySelector(".delete-button").addEventListener("click", function (e) {
-      e.stopPropagation(); // Empêcher la propagation du clic
-      if (confirm("Êtes-vous sûr de vouloir supprimer ce livre ?")) {
-        item.remove();
-        supprimerLivre(bookData);
-      }
-    });
-    
-    container.appendChild(item);
-  }
-
-  function ajouterLivre(bookData) {
-    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-
-    const existe = livres.some(
-      (l) =>
-        l.title.toLowerCase() === bookData.title.toLowerCase() &&
-        l.authors.toLowerCase() === bookData.authors.toLowerCase(),
-    );
-
-    if (existe) {
-      alert("Ce livre est déjà présent dans votre bibliothèque.");
-      return false;
-    }
-
-    livres.push(bookData);
-    localStorage.setItem("bibliotheque", JSON.stringify(livres));
-    return true;
-  }
-
-  function supprimerLivre(bookData) {
-    let livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-    livres = livres.filter(
-      (l) => l.title !== bookData.title || l.authors !== bookData.authors,
-    );
-    localStorage.setItem("bibliotheque", JSON.stringify(livres));
-  }
-
-  function calculerStatsLivres(livres) {
-    const parMois = new Array(12).fill(0);
-    const parAnnee = {};
-
-    livres
-      .filter((livre) => livre.status === "Terminé" && livre.endDate)
-      .forEach((livre) => {
-        const date = new Date(livre.endDate);
-        const mois = date.getMonth();
-        const annee = date.getFullYear();
-
-        parMois[mois]++;
-        parAnnee[annee] = (parAnnee[annee] || 0) + 1;
-      });
-
-    return { parMois, parAnnee };
-  }
-
-  // ----------------- Recherche (recherche.html) -----------------
-  if (page.includes("recherche.html")) {
-    const searchForm = document.getElementById("search-form");
-    const popup = document.getElementById("popup");
-    const popupSave = document.getElementById("popup-save");
-    const popupCancel = document.getElementById("popup-cancel");
-    const popupClose = document.getElementById("popup-close");
-
-    if (!searchForm) return;
-
-    searchForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const query = document.getElementById("search-input").value.trim();
-      
-      if (!query) {
-        alert("Veuillez saisir un titre ou un auteur.");
-        return;
-      }
-
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "<p>Recherche en cours...</p>";
-
-      fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=5`,
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          resultDiv.innerHTML = "";
-          if (!data.items || data.items.length === 0) {
-            resultDiv.innerHTML = "<p>Aucun livre trouvé en français. Essayez un autre titre.</p>";
-            return;
-          }
-          
-          data.items.forEach((item) => {
-            const book = item.volumeInfo;
-            const bookDiv = document.createElement("div");
-            bookDiv.classList.add("result-item");
-            bookDiv.innerHTML = `
-            <div class="image-and-button">
-                <img src="${book.imageLinks?.thumbnail || ''}" alt="Couverture" onerror="this.style.display='none'">
-                <button class="add-button">Ajouter à la bibliothèque</button>
-            </div>
-            <div class="book-content">
-                <h3>${book.title || "Titre inconnu"}</h3>
-                <h4>${book.authors ? book.authors.join(", ") : "Auteur inconnu"}</h4>
-                <p>${book.description ? book.description.substring(0, 200) + "..." : "Pas de résumé disponible."}</p>
-            </div>
-            `;
-
-            resultDiv.appendChild(bookDiv);
-
-            const addButton = bookDiv.querySelector(".add-button");
-            addButton.addEventListener("click", () => {
-              livreTemporaire = {
-                title: book.title || "Titre inconnu",
-                authors: book.authors ? book.authors.join(", ") : "Auteur inconnu",
-                cover: book.imageLinks?.thumbnail || "",
-                description: book.description?.trim() || "Pas de résumé disponible.",
-                genre: Array.isArray(book.categories) && book.categories.length > 0
-                  ? book.categories[0].trim()
-                  : "Inconnu",
-              };
-
-              document.getElementById("popup-genre").textContent = livreTemporaire.genre;
-              document.getElementById("popup-description").textContent = livreTemporaire.description;
-
-              popup.style.display = "block";
-            });
-          });
-        })
-        .catch((error) => {
-          console.error("Erreur :", error);
-          resultDiv.innerHTML = "<p>Erreur lors de la recherche. Vérifiez votre connexion.</p>";
-        });
-    });
-
-    if (popupCancel) {
-      popupCancel.addEventListener("click", () => {
-        popup.style.display = "none";
-        livreTemporaire = null;
-      });
-    }
-
-    if (popupClose) {
-      popupClose.addEventListener("click", () => {
-        popup.style.display = "none";
-        livreTemporaire = null;
-      });
-    }
-
-    if (popupSave) {
-      popupSave.addEventListener("click", () => {
-        if (!livreTemporaire) return;
-
-        const status = document.getElementById("popup-status").value;
-        const note = document.getElementById("popup-note").value;
-        const startDate = document.getElementById("popup-start").value;
-        const endDate = document.getElementById("popup-end").value;
-
-        const bookData = {
-          ...livreTemporaire,
-          status,
-          note,
-          startDate,
-          endDate,
-        };
-
-        const ajoutOk = ajouterLivre(bookData);
-        if (ajoutOk) {
-          popup.style.display = "none";
-          livreTemporaire = null;
-          alert("Livre ajouté à votre bibliothèque !");
-          // Réinitialiser le formulaire
-          document.getElementById("popup-status").value = "À lire";
-          document.getElementById("popup-note").value = "";
-          document.getElementById("popup-start").value = "";
-          document.getElementById("popup-end").value = "";
-        }
-      });
-    }
-  }
-
-  // ----------------- Accueil (index.html) -----------------
-  if (page.includes("index.html") || page === "/" || page === "") {
-    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-
-    // Affiche les derniers livres
-    const derniersLivresContainer = document.getElementById("derniers-livres");
-    if (derniersLivresContainer) {
-      const derniersLivres = livres.slice(-10).reverse();
-      derniersLivres.forEach((livre) =>
-        afficherLivre(livre, derniersLivresContainer),
-      );
-    }
-
-    // Graphiques seulement si Chart.js est chargé
-    if (typeof Chart !== 'undefined') {
-      const { parMois, parAnnee } = calculerStatsLivres(livres);
-        console.log("Livres analysés pour les graphes :", livres);
-        console.log("Stats par mois :", parMois);
-        console.log("Stats par année :", parAnnee);
-
-      // Graphique par mois
-      const graphMois = document.getElementById("graph-mois");
-      if (graphMois) {
-        new Chart(graphMois, {
-          type: "bar",
-          data: {
-            labels: [
-              "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-              "Juil", "Août", "Sep", "Oct", "Nov", "Déc",
-            ],
-            datasets: [
-              {
-                label: "Livres lus",
-                data: parMois,
-                backgroundColor: "#c9a0ff",
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true } },
-          },
-        });
-      }
-
-      // Graphique par année
-      const annees = Object.keys(parAnnee).sort();
-      const counts = annees.map((y) => parAnnee[y]);
-
-      const graphAnnee = document.getElementById("graph-annee");
-      if (graphAnnee && annees.length > 0) {
-        new Chart(graphAnnee, {
-          type: "bar",
-          data: {
-            labels: annees,
-            datasets: [
-              {
-                label: "Livres lus",
-                data: counts,
-                backgroundColor: "#b48eff",
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true } },
-          },
-        });
-      }
-    }
-
-    // Challenge lecture
-    const lus = livres.filter((l) => l.status === "Terminé").length;
-    const progressionElement = document.getElementById("progression-challenge");
-    if (progressionElement) {
-      progressionElement.textContent = lus;
-    }
-  }
-
-  // ----------------- Bibliothèque (bibliotheque.html) -----------------
-  if (page.includes("bibliotheque.html")) {
     const container = document.getElementById("library");
-    const selectFiltre = document.getElementById("filtre-statut");
-    let livreEnCours = null;
 
-    function afficherLivresFiltres(statut) {
-      if (!container) return;
-      
-      container.innerHTML = "";
-      const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-      const livresFiltres = statut === "Tous" ? livres : livres.filter((l) => l.status === statut);
-      
-      if (livresFiltres.length === 0) {
-        container.innerHTML = "<p>Aucun livre trouvé pour ce filtre.</p>";
-        return;
-      }
-      
-      livresFiltres.forEach((livre) => afficherLivre(livre, container));
+    if (!container) return;
+    container.innerHTML = "";
+
+    const self = this;  // pour garder la référence correcte à l’instance
+
+    let toDisplay = this.livres;
+    if (statut && statut !== "Tous") {
+      toDisplay = this.livres.filter(l => l.status === statut);
     }
 
-    // Initialisation : tous les livres
-    afficherLivresFiltres("Tous");
-
-    // Écoute du filtre
-    if (selectFiltre) {
-      selectFiltre.addEventListener("change", (e) => {
-        afficherLivresFiltres(e.target.value);
-      });
-    }
-
-    // Gestion du clic pour éditer un livre
-    if (container) {
-      container.addEventListener("click", (e) => {
-        // Ignorer si c'est le bouton supprimer
-        if (e.target.classList.contains("delete-button")) return;
-        
-        const item = e.target.closest(".grid-item");
-        if (!item) return;
-
-        const titleElement = item.querySelector("strong");
-        const authorsElement = item.querySelector("p:nth-child(2)");
-        
-        if (!titleElement || !authorsElement) return;
-
-        const title = titleElement.textContent;
-        const authors = authorsElement.textContent;
-
-        const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-        const livre = livres.find(
-          (l) => l.title === title && l.authors === authors,
-        );
-
-        if (!livre) return;
-
-        livreEnCours = livre;
-
-        // Remplir la popup d'édition
-        document.getElementById("edit-title").textContent = livre.title;
-        document.getElementById("edit-authors").textContent = livre.authors;
-        document.getElementById("edit-status").value = livre.status;
-        document.getElementById("edit-note").value = livre.note || "";
-        document.getElementById("edit-genre-text").textContent = livre.genre || "Inconnu";
-        document.getElementById("edit-desc-text").textContent = livre.description || "Pas de résumé disponible.";
-        document.getElementById("edit-start").value = livre.startDate || "";
-        document.getElementById("edit-end").value = livre.endDate || "";
-
-        document.getElementById("edit-popup").style.display = "flex";
-      });
-    }
-
-    // Boutons de la popup d'édition
-    const editCancel = document.getElementById("edit-cancel");
-    const editClose = document.getElementById("edit-close");
-    const editSave = document.getElementById("edit-save");
-
-    if (editCancel) {
-      editCancel.addEventListener("click", () => {
-        document.getElementById("edit-popup").style.display = "none";
-        livreEnCours = null;
-      });
-    }
-
-    if (editClose) {
-      editClose.addEventListener("click", () => {
-        document.getElementById("edit-popup").style.display = "none";
-        livreEnCours = null;
-      });
-    }
-
-    if (editSave) {
-      editSave.addEventListener("click", () => {
-        if (!livreEnCours) return;
-
-        livreEnCours.status = document.getElementById("edit-status").value;
-        livreEnCours.note = document.getElementById("edit-note").value;
-        livreEnCours.startDate = document.getElementById("edit-start").value;
-        livreEnCours.endDate = document.getElementById("edit-end").value;
-
-        const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-        const index = livres.findIndex(
-          (l) => l.title === livreEnCours.title && l.authors === livreEnCours.authors,
-        );
-
-        if (index !== -1) {
-          livres[index] = livreEnCours;
-          localStorage.setItem("bibliotheque", JSON.stringify(livres));
-        }
-
-        document.getElementById("edit-popup").style.display = "none";
-        livreEnCours = null;
-
-        // Recharge la liste avec le filtre actuel
-        const currentFiltre = selectFiltre ? selectFiltre.value : "Tous";
-        afficherLivresFiltres(currentFiltre);
-      });
-    }
-
-    // EXPORT CSV
-    const exportBtn = document.getElementById("export-csv");
-    if (exportBtn) {
-      exportBtn.addEventListener("click", () => {
-        const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-        if (livres.length === 0) {
-          alert("Aucun livre à exporter.");
-          return;
-        }
-
-        const header = [
-          "Titre", "Auteur(s)", "Statut", "Note", "Début", "Fin", "Genre", "Résumé"
-        ];
-        const lignes = livres.map((l) =>
-          [
-            l.title,
-            l.authors,
-            l.status,
-            l.note || "",
-            l.startDate || "",
-            l.endDate || "",
-            l.genre || "",
-            (l.description || "").replace(/\n/g, " ").replace(/"/g, '""'),
-          ]
-            .map((val) => `"${val}"`)
-            .join(","),
-        );
-
-        const csvContent = [header.join(","), ...lignes].join("\n");
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", "ma_bibliotheque.csv");
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      });
-    }
-
-    // IMPORT CSV
-    const importBtn = document.getElementById("import-csv");
-    if (importBtn) {
-      importBtn.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async function (event) {
-  try {
-    const lignes = event.target.result
-      .split("\n")
-      .filter((l) => l.trim().length > 0);
-
-    if (lignes.length <= 1) {
-      alert("Le fichier CSV semble vide ou invalide.");
+    if (toDisplay.length === 0) {
+      container.innerHTML = "<p>Aucun livre trouvé pour ce filtre.</p>";
       return;
     }
 
-    lignes.shift(); // En-tête
-    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-    let nouveauxLivres = 0;
+    toDisplay.forEach(livre => {
+      const div = document.createElement("div");
+      const fullDesc = livre.description || "Pas de résumé disponible.";
+      const maxChars = 500;
+      const shortDesc = (fullDesc.length > maxChars)
+    ? fullDesc.substring(0, maxChars).trim() + "…"
+    : fullDesc; 
+      div.className = "grid-item";
+      div.style.display = "flex";
+      div.style.alignItems = "flex-start";
+      div.style.padding = "12px";
+      div.style.borderBottom = "1px solid var(--gray-200, #d1d5db)";
 
-    for (const ligne of lignes) {
-      try {
-        const values = ligne
-          .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
-          .map((v) => v.replace(/^"|"$/g, "").replace(/""/g, '"'));
+      // ≪ … ≫ avant : const div = document.createElement("div");
+div.className = "grid-item";
 
-        if (values.length < 8) continue;
+div.innerHTML = `
+  <div class="cover-container">
+    <div class="cover-info-row">
+      <img
+        src="${livre.cover || ""}"
+        alt="Couverture"
+        onerror="this.style.display='none'"
+        class="book-cover"
+      >
+      <div class="title-author">
+        <p class="book-title">${livre.title}</p>
+        <p class="book-author">${livre.authors}</p>
+      </div>
+      <button class="delete-button">Supprimer</button>
 
-        const titre = values[0];
-        const auteur = values[1];
+    </div>
+  </div>
 
-        const existe = livres.some(
-          (l) =>
-            l.title.toLowerCase() === titre.toLowerCase() &&
-            l.authors.toLowerCase() === auteur.toLowerCase(),
-        );
+  <div class="book-details">
+    <p><strong class="label">Genre :</strong> ${livre.genre}</p>
+    <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
+    <p><strong class="label">Statut :</strong> ${livre.status}</p>
+    <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
+  </div>
+`;
 
-        if (!existe) {
-          const nouveau = {
-            title: titre,
-            authors: auteur,
-            status: values[2] || "À lire",
-            note: values[3] || "",
-            startDate: values[4] || "",
-            endDate: values[5] || "",
-            genre: values[6] || "Inconnu",
-            description: values[7] || "Pas de résumé disponible.",
-            cover: "",
-          };
+// 1) clic sur la carte pour ouvrir la popup d’édition (sauf quand on clique sur "Supprimer")
+div.addEventListener("click", () => {
+  self.ouvrirPopupEdit(livre);
+});
 
-          // Enrichissement API ici
-          const donneesEnrichies = await enrichirLivreViaAPI(titre, auteur);
-          Object.assign(nouveau, donneesEnrichies);
-
-          livres.push(nouveau);
-          nouveauxLivres++;
-        }
-      } catch (err) {
-        console.error("Erreur traitement ligne :", err);
-      }
-    }
-
-    localStorage.setItem("bibliotheque", JSON.stringify(livres));
-    alert(`Import terminé ! ${nouveauxLivres} nouveaux livres ajoutés.`);
-
-    const currentFiltre = selectFiltre ? selectFiltre.value : "Tous";
-    afficherLivresFiltres(currentFiltre);
-
-  } catch (err) {
-    console.error("Erreur import CSV :", err);
-    alert("Erreur lors de l'import du fichier CSV.");
+// 2) évènement du bouton 'Supprimer' (stopPropagation empêche l'ouverture de la popup)
+const deleteBtn = div.querySelector(".delete-button");
+deleteBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
+    self.supprimerLivre(livre);
   }
-};
+});
 
-       
-        
+container.appendChild(div);
 
-        reader.readAsText(file);
-      });
+    });
+  }
+
+  // 1.c) Trier (critère) ← utilisé dans bibliotheque.php
+  trierLivres(critere) {
+    const container = document.getElementById("library");
+    
+    if (!container) return;
+
+    const self = this;
+
+    let sorted = [...this.livres];
+    switch (critere) {
+      case "auteur":
+        sorted.sort((a, b) => a.authors.localeCompare(b.authors));
+        break;
+      case "note":
+        sorted.sort((a, b) => (b.note || 0) - (a.note || 0));
+        break;
+      case "genre":
+        sorted.sort((a, b) => a.genre.localeCompare(b.genre));
+        break;
+      case "titre":
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "date-croissant":
+        sorted.sort((a, b) => {
+          if (!a.endDate) return -1;
+          if (!b.endDate) return 1;
+          return new Date(a.endDate) - new Date(b.endDate);
+        });
+        break;
+      case "date-decroissant":
+        sorted.sort((a, b) => {
+          if (!a.endDate) return 1;
+          if (!b.endDate) return -1;
+          return new Date(b.endDate) - new Date(a.endDate);
+        });
+        break;
+      default:
+        break;
     }
-const enrichirBtn = document.getElementById("enrichir-fiches");
-if (enrichirBtn) {
-  enrichirBtn.addEventListener("click", async () => {
-    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-    let livresModifies = 0;
 
-    for (const livre of livres) {
-      if (!livre.cover || livre.cover === "") {
-        const enrichi = await enrichirLivreViaAPI(livre.title, livre.authors);
-        if (enrichi.cover || enrichi.description !== "Pas de résumé disponible." || enrichi.genre !== "Inconnu") {
-          Object.assign(livre, enrichi);
-          livresModifies++;
-        }
-      }
-    }
-
-    localStorage.setItem("bibliotheque", JSON.stringify(livres));
-    alert(`${livresModifies} livre(s) enrichi(s).`);
-
-    const currentFiltre = selectFiltre ? selectFiltre.value : "Tous";
-    afficherLivresFiltres(currentFiltre);
-  });
-}
+    container.innerHTML = "";
+    sorted.forEach(livre => {
+      const div = document.createElement("div");
+      const fullDesc = livre.description || "Pas de résumé disponible.";
+      const maxChars = 500;
+      const shortDesc = (fullDesc.length > maxChars)
+    ? fullDesc.substring(0, maxChars).trim() + "…"
+    : fullDesc; 
   
+      // ≪ … ≫ avant : const div = document.createElement("div");
+div.className = "grid-item";
 
+div.innerHTML = `
+  <div class="cover-container">
+    <div class="cover-info-row">
+      <img
+        src="${livre.cover || ""}"
+        alt="Couverture"
+        onerror="this.style.display='none'"
+        class="book-cover"
+      >
+      <div class="title-author">
+        <p class="book-title">${livre.title}</p>
+        <p class="book-author">${livre.authors}</p>
+      </div>
+      <button class="delete-button">Supprimer</button>
+
+    </div>
+  </div>
+
+  <div class="book-details">
+    <p><strong class="label">Genre :</strong> ${livre.genre}</p>
+    <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
+    <p><strong class="label">Statut :</strong> ${livre.status}</p>
+    <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
+  </div>
+`;
+
+// 1) clic sur la carte pour ouvrir la popup d’édition (sauf quand on clique sur "Supprimer")
+div.addEventListener("click", () => {
+  self.ouvrirPopupEdit(livre);
+});
+
+// 2) évènement du bouton 'Supprimer' (stopPropagation empêche l'ouverture de la popup)
+const deleteBtn = div.querySelector(".delete-button");
+deleteBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
+    self.supprimerLivre(livre);
+  }
+});
+
+container.appendChild(div);
+
+    });
+  }
+
+
+
+  // 1.d) Ouvrir la popup « Modifier un livre » ← utilisé sur bibliotheque.php
+ouvrirPopupEdit(livre) {
+  this.livreEnCours = livre;
+
+  // 1) Récupération de l’élément <img>
+  const coverElt = document.getElementById("popup-edit-cover");
+  if (coverElt) {
+    // Afficher l'URL dans la console (pour debug) :
+    console.log("URL de couverture chargée :", livre.cover);
+
+    if (livre.cover) {
+      coverElt.src = livre.cover;
+      coverElt.style.display = "block";
+    } else {
+      // Si cover est vide ou undefined, on masque l'<img>
+      coverElt.style.display = "none";
+    }
+  }
+
+  // 2) Les autres champs textuels
+  const titleElt   = document.getElementById("popup-edit-title");
+  const authorElt  = document.getElementById("popup-edit-authors");
+  const genreElt   = document.getElementById("popup-edit-genre-text");
+  const descElt    = document.getElementById("popup-edit-desc-text");
+  const statusElt  = document.getElementById("popup-edit-status");
+  const noteElt    = document.getElementById("popup-edit-note");
+  const startElt   = document.getElementById("popup-edit-start");
+  const endElt     = document.getElementById("popup-edit-end");
+
+  if (titleElt)  titleElt.textContent  = livre.title;
+  if (authorElt) authorElt.textContent = livre.authors;
+  if (genreElt)  genreElt.textContent  = livre.genre;
+  if (descElt)   descElt.textContent   = livre.description;
+
+  if (statusElt) statusElt.value = livre.status;
+  if (noteElt)   noteElt.value   = livre.note || "";
+  if (startElt)  startElt.value  = livre.startDate || "";
+  if (endElt)    endElt.value    = livre.endDate || "";
+
+  // 3) Enfin, on affiche la popup
+  document.getElementById("popup-edit").style.display = "flex";
 }
 
-const enrichirBtn = document.getElementById("enrichir-fiches");
-const chargementDiv = document.getElementById("chargement-enrichissement");
 
-if (enrichirBtn && chargementDiv) {
-  enrichirBtn.addEventListener("click", async () => {
-    chargementDiv.style.display = "block"; // Affiche le message de chargement
-    enrichirBtn.disabled = true;
+  // 1.e) Fermer la popup « Modifier » et réinitialiser
+  fermerPopupEdit() {
+    document.getElementById("popup-edit").style.display = "none";
+    this.livreEnCours = null;
+  }
 
-    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
-    let livresModifies = 0;
+  // 1.f) Enregistrer les modifications d’un livre → utilisé sur bibliotheque.php
+  async enregistrerModifications() {
+    const livre = this.livreEnCours;
+    if (!livre) return;
 
-    for (const livre of livres) {
-      if (!livre.cover || livre.cover === "") {
-        const enrichi = await enrichirLivreViaAPI(livre.title, livre.authors);
-        if (enrichi.cover || enrichi.description !== "Pas de résumé disponible." || enrichi.genre !== "Inconnu") {
-          Object.assign(livre, enrichi);
-          livresModifies++;
-        }
-      }
+    const statut    = document.getElementById("popup-edit-status").value;
+    const note      = document.getElementById("popup-edit-note").value;
+    const startDate = document.getElementById("popup-edit-start").value;
+    const endDate   = document.getElementById("popup-edit-end").value;
+
+    // CONTRAINTES MÉTIER (identiques à la popup « Ajouter »)
+    if (statut === "À lire" && (startDate || endDate)) {
+      alert("Un livre 'À lire' ne doit pas avoir de date de début ou de fin.");
+      return;
+    }
+    if (statut === "En cours" && endDate) {
+      alert("Un livre 'En cours' ne doit pas avoir de date de fin.");
+      return;
+    }
+    if (statut === "Terminé" && (!startDate || !endDate)) {
+      alert("Un livre 'Terminé' doit avoir une date de début et une date de fin.");
+      return;
+    }
+    if (statut === "DNF" && endDate) {
+      alert("Un livre 'DNF' ne doit pas avoir de date de fin.");
+      return;
     }
 
-    localStorage.setItem("bibliotheque", JSON.stringify(livres));
+    // Appliquer les valeurs aux propriétés de l’objet en mémoire
+    livre.status    = statut;
+    livre.note      = parseInt(note) || 0;
+    livre.startDate = (statut === "Terminé") ? startDate : "";
+    livre.endDate   = (statut === "Terminé") ? endDate : "";
 
-    // Mise à jour UI
-    chargementDiv.style.display = "none";
-    enrichirBtn.disabled = false;
+    // Envoi vers le serveur pour mise à jour en base
+    try {
+      const res = await fetch(`${API_BASE_URL}/modifier-livre.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          livre_id:   livre.id, // ← C’EST ÇA QUI MANQUE
+          titre:      livre.title,
+          auteur:     livre.authors,
+          statut:     livre.status,
+          note:       livre.note,
+          date_debut: livre.startDate,
+          date_fin:   livre.endDate
+        })
+      });
+      const data = await res.json();
+      console.log("→ données reçues depuis get-livre.php :", data.livres);
 
-    alert(`${livresModifies} livre(s) enrichi(s).`);
+      if (!data.success) {
+        console.warn("Erreur sur le serveur :", data.message);
+      }
+    } catch (err) {
+      console.error("Erreur communication serveur :", err);
+    }
 
-    const currentFiltre = selectFiltre ? selectFiltre.value : "Tous";
-    afficherLivresFiltres(currentFiltre);
+    // Mise à jour locale + réaffichage
+    localStorage.setItem("bibliotheque", JSON.stringify(this.livres));
+    this.afficherLivresFiltres(document.getElementById("filtre-statut").value || "Tous");
+    this.fermerPopupEdit();
+  }
+
+  // 1.g) Ajouter un livre en base (pop « Ajouter ») ← utilisé sur recherche.php
+  async ajouterLivre(bookData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ajouter-livre.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(bookData)
+      });
+      const data = await response.json();
+      if (!data.success) {
+        console.warn("Erreur BD :", data.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Erreur communication serveur :", err);
+      return false;
+    }
+  }
+
+  
+/**
+ * Supprime un livre à la fois du tableau en mémoire, du localStorage
+ * et via l’API (supprimer-livre.php).
+ */
+async  supprimerLivre(livre) {
+  // 1) Retirer du tableau interne
+  this.livres = this.livres.filter(l => 
+    !(l.title === livre.title && l.authors === livre.authors)
+  );
+  // 2) Mettre à jour localStorage
+  localStorage.setItem("bibliotheque", JSON.stringify(this.livres));
+
+  // 3) Appeler l’API pour supprimer en base
+  try {
+    const res = await fetch(`${API_BASE_URL}/supprimer-livre.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        titre:  livre.title,
+        auteur: livre.authors
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      console.warn("Erreur lors de la suppression côté serveur :", data.message);
+    }
+  } catch (err) {
+    console.error("Erreur réseau lors de la suppression :", err);
+  }
+
+  // 4) Réafficher la liste mise à jour (en tenant compte du filtre actuel)
+  const filtre = document.getElementById("filtre-statut")?.value || "Tous";
+  this.afficherLivresFiltres(filtre);
+}
+}
+
+
+
+// ─── 2) INITIALISATION LORSQUE LE DOM EST CHARGÉ ─────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  const manager = new BibliothequeManager();
+  manager.chargerLivres();
+
+  // Charger le menu (menu.html) si présent
+  const menuPlaceholder = document.getElementById("menu-placeholder");
+  if (menuPlaceholder) {
+    fetch("menu.html")
+      .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
+      .then(html => menuPlaceholder.innerHTML = html)
+      .catch(err => {
+        console.warn("Impossible de charger menu.html :", err);
+        menuPlaceholder.innerHTML = "<p>Menu non disponible.</p>";
+      });
+  }
+
+  // Selon la page, appeler la fonction d’initialisation adéquate
+  const page = window.location.pathname;
+  if (page.includes("recherche.php")) {
+    initialiserRecherche(manager);
+  }
+  if (page.includes("bibliotheque.php")) {
+    initialiserBibliotheque(manager);
+  }
+});
+
+// ----------------------------
+//  Assurez-vous d'avoir déjà
+//  défini/laissé votre
+//  BibliothequeManager dans
+//  script.js (ou importé).
+//  On présume donc que
+//  BibliothequeManager.retourne
+//  un tableau `this.livres`
+//  où chaque livre est de la forme :
+//  {
+//    title:       string,
+//    authors:     string,
+//    status:      "À lire" | "En cours" | "Terminé" | "DNF",
+//    note:        number,
+//    startDate:   "YYYY-MM-DD" (ou "" si inexistant),
+//    endDate:     "YYYY-MM-DD" (ou "" si inexistant),
+//    genre:       string,
+//    description: string,
+//    cover:       string (URL ou "") 
+//  }
+// ----------------------------
+
+document.addEventListener("DOMContentLoaded", () => {
+  const manager = new BibliothequeManager();
+
+  // 1) Charger les livres depuis get-livre.php
+  manager.chargerLivres().then(() => {
+    // 2) Dès que la liste est chargée, on remplit la section "Mes dernières lectures"
+    afficherDernieresLectures(manager);
+    if (document.getElementById("popup-edit")) {
+  initialiserBibliotheque(manager);
+}
+  });
+
+
+  // 3) Charger le menu commun (menu.html) s’il y a lieu
+  const menuPlaceholder = document.getElementById("menu-placeholder");
+  if (menuPlaceholder) {
+    fetch("menu.html")
+      .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
+      .then(html => menuPlaceholder.innerHTML = html)
+      .catch(err => {
+        console.warn("Impossible de charger menu.html :", err);
+        menuPlaceholder.innerHTML = "<p>Menu non disponible.</p>";
+      });
+  }
+
+  // 4) Si on est sur recherche.php, on appelle initialiserRecherche(manager)
+  if (window.location.pathname.includes("recherche.php")) {
+    initialiserRecherche(manager);
+  }
+  // 5) Si on est sur bibliotheque.php, on appelle initialiserBibliotheque(manager)
+  if (window.location.pathname.includes("bibliotheque.php")) {
+    initialiserBibliotheque(manager);
+  }
+  // (On ne veut PAS appeler initialiserBibliotheque sur index.php,
+  //  on appelle juste afficherDernieresLectures plus haut.)
+});
+
+
+
+
+// ─── 3) LOGIQUE « RECHERCHE + POPUP ADD » (pour recherche.php) ──────────────────
+function initialiserRecherche(manager) {
+  const searchForm = document.getElementById("search-form");
+  const resultDiv  = document.getElementById("result");
+
+  // 3.a) Soumettre le formulaire → requête Google Books
+  searchForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const query = document.getElementById("search-input").value.trim();
+    if (!query) {
+      alert("Veuillez saisir un titre ou un auteur.");
+      return;
+    }
+
+    resultDiv.innerHTML = "<p>Recherche en cours…</p>";
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=5`)
+      .then(res => res.json())
+      .then(data => {
+        resultDiv.innerHTML = "";
+        if (!data.items || data.items.length === 0) {
+          resultDiv.innerHTML = "<p>Aucun livre trouvé en français. Essayez un autre titre.</p>";
+          return;
+        }
+        data.items.forEach(item => {
+          const book = item.volumeInfo;
+          const bookDiv = document.createElement("div");
+          bookDiv.classList.add("result-item");
+          bookDiv.style.display = "flex";
+          bookDiv.style.alignItems = "flex-start";
+          bookDiv.style.padding = "12px";
+          bookDiv.style.borderBottom = "1px solid var(--gray-200, #d1d5db)";
+          bookDiv.innerHTML = `
+            <div class="image-and-button" style="margin-right: 12px;">
+              <img src="${book.imageLinks?.thumbnail || ""}" alt="Couverture" onerror="this.style.display='none'" 
+                   style="width: 60px; height: 90px; object-fit: cover; border-radius: var(--radius-md,8px); box-shadow: var(--shadow-md);">
+              <button class="add-button" style="
+                      margin-top: 8px;
+                      padding: 6px 12px;
+                      background: var(--success-500, #10b981);
+                      color: white;
+                      border: none;
+                      border-radius: var(--radius-md, 8px);
+                      cursor: pointer;
+                      font-size: 0.9rem;
+                      font-weight: 500;
+                    ">
+                Ajouter
+              </button>
+            </div>
+            <div class="book-content" style="flex:1;">
+              <h3 style="margin:0 0 4px 0; font-size: 1.1rem;">${book.title || "Titre inconnu"}</h3>
+              <h4 style="margin:0 0 8px 0; font-size: 0.95rem; color: var(--primary-600, #8b5cf6);">
+                ${book.authors ? book.authors.join(", ") : "Auteur inconnu"}
+              </h4>
+              <p style="margin:0; color: var(--gray-600, #4b5563); font-size: 0.9rem; line-height:1.4;">
+                ${book.description
+                  ? book.description.substring(0, 200) + "…"
+                  : "Pas de résumé disponible."}
+              </p>
+            </div>
+          `;
+          resultDiv.appendChild(bookDiv);
+
+          // 3.b) Clique sur le bouton « Ajouter »
+          const addButton = bookDiv.querySelector(".add-button");
+          addButton.addEventListener("click", () => {
+            // Construire l’objet temporaire
+            const livreTemporaire = {
+              title:       book.title || "Titre inconnu",
+              authors:     book.authors ? book.authors.join(", ") : "Auteur inconnu",
+              cover:       book.imageLinks?.thumbnail || "",
+              description: book.description?.trim() || "Pas de résumé disponible.",
+              genre:       Array.isArray(book.categories) && book.categories.length > 0
+                            ? book.categories[0].trim()
+                            : "Inconnu",
+              status:      "À lire",
+              note:        "",
+              startDate:   "",
+              endDate:     ""
+            };
+            manager.livreTemporaire = livreTemporaire;
+
+            // Pré-remplir la popup « Ajouter »
+            document.getElementById("popup-add-title").textContent   = livreTemporaire.title;
+            document.getElementById("popup-add-authors").textContent = livreTemporaire.authors;
+
+            const coverElt = document.getElementById("popup-add-cover-preview");
+            if (livreTemporaire.cover) {
+              coverElt.src = livreTemporaire.cover;
+              coverElt.style.display = "block";
+            } else {
+              coverElt.style.display = "none";
+            }
+
+            document.getElementById("popup-add-genre").textContent       = livreTemporaire.genre;
+            document.getElementById("popup-add-description").textContent = livreTemporaire.description;
+
+            // Réinitialiser les champs statut/note/dates
+            document.getElementById("popup-add-status").value = "À lire";
+            document.getElementById("popup-add-note").value   = "";
+            document.getElementById("popup-add-start").value  = "";
+            document.getElementById("popup-add-end").value    = "";
+
+            // Ouvrir la popup
+            document.getElementById("popup-add").style.display = "flex";
+          });
+        });
+      })
+      .catch(err => {
+        console.error("Erreur API Google Books :", err);
+        resultDiv.innerHTML = "<p>Erreur lors de la recherche. Vérifiez votre connexion.</p>";
+      });
+  });
+
+
+  // 3.c) Popup « Ajouter à ma bibliothèque » → fermeture / validation
+  const popupAdd       = document.getElementById("popup-add");
+  const popupAddClose  = document.getElementById("popup-add-close");
+  const popupAddCancel = document.getElementById("popup-add-cancel");
+  const popupAddSave   = document.getElementById("popup-add-save");
+
+  // Fermer via la croix
+  popupAddClose.addEventListener("click", () => {
+    popupAdd.style.display = "none";
+    manager.livreTemporaire = null;
+  });
+  // Fermer via « Annuler »
+  popupAddCancel.addEventListener("click", () => {
+    popupAdd.style.display = "none";
+    manager.livreTemporaire = null;
+  });
+
+  // Lorsque l’utilisateur clique sur « Valider »
+  popupAddSave.addEventListener("click", async () => {
+    if (!manager.livreTemporaire) {
+      alert("Aucun livre chargé !");
+      return;
+    }
+    const statut    = document.getElementById("popup-add-status").value;
+    const note      = document.getElementById("popup-add-note").value.trim();
+    const startDate = document.getElementById("popup-add-start").value;
+    const endDate   = document.getElementById("popup-add-end").value;
+
+    // Validations métier :
+    if (statut === "À lire" && (startDate || endDate)) {
+      alert("Un livre 'À lire' ne doit pas avoir de date.");
+      return;
+    }
+    if (statut === "En cours" && endDate) {
+      alert("Un livre 'En cours' ne doit pas avoir de date de fin.");
+      return;
+    }
+    if (statut === "Terminé" && (!startDate || !endDate)) {
+      alert("Un livre 'Terminé' doit avoir date de début et de fin.");
+      return;
+    }
+    if (statut === "DNF" && endDate) {
+      alert("Un livre 'DNF' ne doit pas avoir de date de fin.");
+      return;
+    }
+
+    // Mise à jour de l’objet temporaire
+    manager.livreTemporaire.status    = statut;
+    manager.livreTemporaire.note      = parseInt(note) || 0;
+    manager.livreTemporaire.startDate = (statut === "Terminé") ? startDate : "";
+    manager.livreTemporaire.endDate   = (statut === "Terminé") ? endDate : "";
+
+    // Construire l’objet définitif pour l’API
+    const livreFinal = {
+    title:       manager.livreTemporaire.title,        // col `titre`
+    authors:     manager.livreTemporaire.authors,      // col `auteur`
+    cover:       manager.livreTemporaire.cover,        // col `couverture`
+    description: manager.livreTemporaire.description,  // col `description`
+    genre:       manager.livreTemporaire.genre,        // col `genre`
+    status:      statut,                               // col `statut` en base
+    note:        parseInt(note) || 0,                  // col `note`
+    startDate:   (statut === "Terminé" ? startDate : ""), // col `date_debut`
+    endDate:     (statut === "Terminé" ? endDate   : "")  // col `date_fin`
+  };
+
+    const success = await manager.ajouterLivre(livreFinal);
+    if (success) {
+      alert("Livre ajouté avec succès !");
+      popupAdd.style.display = "none";
+      manager.livreTemporaire = null;
+      // On peut recharger la liste (optionnel)
+      manager.chargerLivres();
+    } else {
+      alert("Erreur lors de l’ajout du livre (verifier la console).");
+    }
   });
 }
 
 
+
+// ─── 4) LOGIQUE « BIBLIOTHÈQUE + POPUP EDIT » (pour bibliotheque.php) ──────────
+function initialiserBibliotheque(manager) {
+  const selectFiltre = document.getElementById("filtre-statut");
+  const selectTri    = document.getElementById("tri-critere");
+
+  // 4.a) Filtrer dès qu’on change de valeur
+  selectFiltre.addEventListener("change", e => {
+    manager.afficherLivresFiltres(e.target.value);
+  });
+
+  // 4.b) Trier dès qu’on change de critère
+  selectTri.addEventListener("change", e => {
+    manager.trierLivres(e.target.value);
+  });
+
+  // 4.c) Configuration de la popup « Modifier un livre »
+  const popupEdit       = document.getElementById("popup-edit");
+  const popupEditClose  = document.getElementById("popup-edit-close");
+  const popupEditCancel = document.getElementById("popup-edit-cancel");
+
+  // Fermer la popup via la croix
+  popupEditClose.addEventListener("click", () => manager.fermerPopupEdit());
+  // Fermer via « Annuler »
+  popupEditCancel.addEventListener("click", () => manager.fermerPopupEdit());
+
+  // Enregistrer → appeler manager.enregistrerModifications()
+const popupEditSave = document.getElementById("popup-edit-save");
+if (popupEditSave) {
+  popupEditSave.addEventListener("click", async () => {
+    console.log("🔔 clic sur Enregistrer détecté");
+    await manager.enregistrerModifications();
+  });
+}
+
+
+observer.observe(document.body, { childList: true, subtree: true });
+
+  
+  // 4.d) Exporter CSV
+  const exportBtn = document.getElementById("export-csv");
+  exportBtn.addEventListener("click", () => {
+    const livres = JSON.parse(localStorage.getItem("bibliotheque")) || [];
+    if (livres.length === 0) {
+      alert("Aucun livre à exporter.");
+      return;
+    }
+    const header = ["Titre", "Auteur(s)", "Statut", "Note", "Début", "Fin", "Genre", "Résumé"];
+    const rows = livres.map(l => [
+      l.title,
+      l.authors,
+      l.status,
+      l.note || "",
+      l.startDate || "",
+      l.endDate || "",
+      l.genre || "",
+      (l.description || "").replace(/"/g, '""')
+    ].map(val => `"${val}"`).join(","));
+    const csvContent = [header.join(","), ...rows].join("\n");
+    const blob       = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url        = URL.createObjectURL(blob);
+    const link       = document.createElement("a");
+    link.href  = url;
+    link.download = "ma_bibliotheque.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
+
+  // 4.e) Importer CSV
+  const importBtn     = document.getElementById("import-csv");
+  const importTrigger = document.getElementById("import-trigger");
+  importTrigger.addEventListener("click", () => importBtn.click());
+
+  importBtn.addEventListener("change", async event => {
+    const file = event.target.files[0];
+    if (!file) {
+      alert("Aucun fichier sélectionné.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const text  = new TextDecoder("utf-8")
+                        .decode(e.target.result)
+                        .normalize("NFC");
+        const lines = text.trim().split("\n").map(l => l.replace(/\r/g, "").trim());
+        const headers = lines.shift()
+                              .split(",")
+                              .map(h => h.replace(/"/g, "").trim());
+        if (headers.length < 8) {
+          alert("CSV invalide : entêtes manquantes.");
+          return;
+        }
+        let livresActuels  = JSON.parse(localStorage.getItem("bibliotheque")) || [];
+        let nouveauxAjoutes = 0;
+
+        for (const line of lines) {
+          const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+          if (!cols || cols.length < 8) continue;
+          const [titre, auteurs, statut, note, debut, fin, genre, resume] = cols
+            .map(c => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
+          const existe = livresActuels.some(l =>
+            l.title.toLowerCase() === titre.toLowerCase() &&
+            l.authors.toLowerCase() === auteurs.toLowerCase()
+          );
+          if (existe) continue;
+
+          // On essaie d’enrichir via Google Books
+          const enrichi = await enrichirLivreViaAPI(titre, auteurs);
+          const newBook = {
+            title:       titre,
+            authors:     auteurs,
+            status:      statut || "À lire",
+            note:        parseFloat(note) || 0,
+            startDate:   debut || "",
+            endDate:     fin || "",
+            genre:       enrichi.genre || genre || "Inconnu",
+            description: enrichi.description || resume || "Pas de résumé disponible.",
+            cover:       enrichi.cover || ""
+          };
+          const ok = await manager.ajouterLivre(newBook);
+          if (ok) {
+            livresActuels.push(newBook);
+            nouveauxAjoutes++;
+          }
+        }
+
+        localStorage.setItem("bibliotheque", JSON.stringify(livresActuels));
+        alert(`${nouveauxAjoutes} nouveau(x) livre(s) ajouté(s).`);
+        manager.chargerLivres();
+      } catch (err) {
+        console.error("Erreur import CSV :", err);
+        alert("Erreur lors de l’importation (voir console).");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // 4.f) Compléter les fiches manquantes (couverture/genre/description)
+  const enrichBtn = document.getElementById("enrichir-fiches");
+  enrichBtn.addEventListener("click", async () => {
+    enrichBtn.disabled = true;
+    for (let livre of manager.livres) {
+      if (!livre.cover || livre.cover === "") {
+        try {
+          const enrichi = await enrichirLivreViaAPI(livre.title, livre.authors);
+          if (enrichi.cover)       livre.cover       = enrichi.cover;
+          if (enrichi.description) livre.description = enrichi.description;
+          if (enrichi.genre)       livre.genre       = enrichi.genre;
+
+          // Mettre à jour en base
+          await fetch(`${API_BASE_URL}/modifier-livre.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              titre:      livre.title,
+              auteur:     livre.authors,
+              statut:     livre.status,
+              note:       livre.note,
+              date_debut: livre.startDate,
+              date_fin:   livre.endDate
+            })
+          });
+        } catch { /* on continue même en cas d’erreur */ }
+      }
+    }
+    localStorage.setItem("bibliotheque", JSON.stringify(manager.livres));
+    manager.afficherLivresFiltres(document.getElementById("filtre-statut").value || "Tous");
+    enrichBtn.disabled = false;
+    alert("Fiches complétées (si des données ont été trouvées).");
+  });
+}
+
+
+
+// ─── 5) UTILITAIRE “ENRICHIR VIA GOOGLE BOOKS” ─────────────────────────────────
 async function enrichirLivreViaAPI(titre, auteur) {
   try {
     const query = `${titre} ${auteur}`;
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=1`
-    );
-    const data = await response.json();
-    const book = data.items?.[0]?.volumeInfo;
-
-    if (!book) return {};
+    const res   = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=1`);
+    const data  = await res.json();
+    const info  = data.items?.[0]?.volumeInfo;
+    if (!info) return {};
 
     return {
-      cover: book.imageLinks?.thumbnail || "",
-      description: book.description?.trim() || "Pas de résumé disponible.",
-      genre: Array.isArray(book.categories) && book.categories.length > 0
-        ? book.categories[0].trim()
-        : "Inconnu",
+      cover:       info.imageLinks?.thumbnail || "",
+      description: info.description?.trim() || "Pas de résumé disponible.",
+      genre:       Array.isArray(info.categories) && info.categories.length > 0
+                    ? info.categories[0].trim()
+                    : "Inconnu"
     };
-  } catch (e) {
-    console.error("Erreur enrichissement API :", e);
+  } catch (err) {
+    console.error("Erreur enrichissement API :", err);
     return {};
   }
 }
+
+/**
+ * Affiche dans la zone #derniers-livres les 5 livres "Terminé" 
+ * les plus récents (triés par endDate décroissante).
+ * Chaque carte montre couverture, titre, auteur, et date de fin (endDate).
+ */
+function afficherDernieresLectures(manager) {
+  // 1) On ne garde que les livres terminés
+  const livresTermines = manager.livres.filter(l => l.status === "Terminé");
+
+  // 2) Tri par date de fin (endDate) décroissante
+  livresTermines.sort((a, b) => {
+    // Si l’un des deux n’a pas de endDate, on le pousse en fin de liste
+    if (!a.endDate) return 1;
+    if (!b.endDate) return -1;
+    return new Date(b.endDate) - new Date(a.endDate);
+  });
+
+  // 3) On ne conserve que les 5 premiers (plus récents)
+  const derniers = livresTermines.slice(0, 5);
+
+  // 4) On vide l’élément HTML <div id="derniers-livres">
+  const conteneur = document.getElementById("derniers-livres");
+  if (!conteneur) return;  // si l’id n’existe pas, on arrête tout
+
+  conteneur.innerHTML = "";
+
+  // 5) S’il n’y a aucun livre terminé, on affiche un message
+  if (derniers.length === 0) {
+    conteneur.innerHTML = `
+      <p style="color: var(--gray-600); text-align: center; width: 100%;">
+        Vous n’avez pas encore terminé de livres.
+      </p>
+    `;
+    return;
+  }
+
+  // 6) Pour chaque livre “Terminé”, on crée une “carte”
+  derniers.forEach(livre => {
+    // Créer l’élément <div class="grid-item"> pour la carte
+    const card = document.createElement("div");
+    card.classList.add("grid-item");
+
+    // Construire le HTML de la carte en veillant à bien utiliser `livre.endDate || "–"`
+    card.innerHTML = `
+      <div class="cover-container">
+        <img
+          src="${livre.cover || ""}"
+          alt="Couverture du livre"
+          onerror="this.style.display='none'"
+          class="book-cover"
+        >
+      </div>
+      <div class="book-details">
+        <p><strong class="label">Titre :</strong> ${livre.title}</p>
+        <p><strong class="label">Auteur :</strong> ${livre.authors}</p>
+        <p><strong class="label">Terminé le :</strong> ${livre.endDate || "–"}</p>
+      </div>
+    `;
+
+  // Si vous souhaitez ouvrir la popup d’édition au clic sur la carte, décommentez :
+    
+    card.addEventListener("click", () => {
+      // Pré-remplir la popup “Modifier” avec toutes les propriétés de “livre”
+      document.getElementById("edit-cover").src           = livre.cover || "";
+      document.getElementById("edit-title").textContent   = livre.title;
+      document.getElementById("edit-authors").textContent = livre.authors;
+      document.getElementById("edit-genre-text").textContent  = livre.genre;
+      document.getElementById("edit-desc-text").textContent   = livre.description;
+      document.getElementById("edit-status").value        = livre.status;
+      document.getElementById("edit-note").value          = livre.note  || "";
+      document.getElementById("edit-start").value         = livre.startDate  || "";
+      document.getElementById("edit-end").value           = livre.endDate  || "";
+      document.getElementById("edit-popup").style.display = "flex";
+    });
+    
+
+    conteneur.appendChild(card);
+  });
 }
