@@ -10,20 +10,22 @@ if (!isset($_SESSION['utilisateur_id'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 
-$titre = $data['titre'] ?? null;
-$auteur = $data['auteur'] ?? null;
+// CORRECTION : Utiliser livre_id et non titre/auteur
+$livre_id = $data['livre_id'] ?? null;
 $utilisateur_id = $_SESSION['utilisateur_id'];
 
-if (!$titre || !$auteur) {
-    echo json_encode(['success' => false, 'message' => 'Titre ou auteur manquant']);
+if (!$livre_id) {
+    echo json_encode(['success' => false, 'message' => 'ID manquant']);
     exit;
 }
 
 try {
-    $stmt = $pdo->prepare("DELETE FROM livres WHERE titre = ? AND auteur = ? AND utilisateur_id = ?");
-    $stmt->execute([$titre, $auteur, $utilisateur_id]);
+    // CORRECTION : Suppression par ID et vérification de l'utilisateur
+    $stmt = $pdo->prepare("DELETE FROM livres WHERE id = ? AND utilisateur_id = ?");
+    $stmt->execute([$livre_id, $utilisateur_id]);
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
+?>

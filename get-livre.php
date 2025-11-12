@@ -9,7 +9,8 @@ if (!isset($_SESSION['utilisateur_id'])) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT titre AS title, auteur AS authors, statut , note, date_debut AS startDate, date_fin AS endDate, genre, description, couverture AS cover FROM livres WHERE utilisateur_id = ?");
+    // CORRECTION : "id," est ajouté au début de la sélection
+    $stmt = $pdo->prepare("SELECT id, titre AS title, auteur AS authors, statut , note, date_debut AS startDate, date_fin AS endDate, genre, description, couverture AS cover FROM livres WHERE utilisateur_id = ?");
     $stmt->execute([$_SESSION['utilisateur_id']]);
     $livres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -17,3 +18,4 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Erreur lors de la récupération des livres : ' . $e->getMessage()]);
 }
+?>
