@@ -1,17 +1,17 @@
 <?php
-#okok ok
 session_start();
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-
+// CORRECTION : 'require' une seule fois au début
 require 'config.php';
 
 $email = $_POST['email'] ?? '';
 $mot_de_passe = $_POST['mot_de_passe'] ?? '';
 
-require_once("config.php");
+// CORRECTION : Suppression du 'require_once' en double
+// require_once("config.php");
 
 $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE email = ?");
 $stmt->execute([$email]);
@@ -32,7 +32,7 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
 <head>
   <meta charset="UTF-8">
   <title>Connexion</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=<?php echo filemtime('style.css'); ?>">
 </head>
 <body>
   <div class="auth-container">
@@ -50,4 +50,3 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
   </div>
 </body>
 </html>
-

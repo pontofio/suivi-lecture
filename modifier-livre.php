@@ -22,25 +22,31 @@ $livre_id = $data['livre_id'] ?? null;
 $statut = $data['statut'] ?? '';
 $utilisateur_id = $_SESSION['utilisateur_id'];
 
-// CORRECTION : Convertir les "" de JS en NULL pour la BDD
+// ==========================================================
+//    CORRECTION CRUCIALE : Convertir "" en NULL pour la BDD
+// ==========================================================
+
+// Pour la NOTE (INT ou NULL)
 $note_raw = $data['note'] ?? null;
 $note = ($note_raw === '' || $note_raw === null) ? null : intval($note_raw);
 
+// Pour la DATE DE DEBUT (DATE ou NULL)
 $debut_raw = $data['date_debut'] ?? null;
 $debut = ($debut_raw === '') ? null : $debut_raw;
 
+// Pour la DATE DE FIN (DATE ou NULL)
 $fin_raw = $data['date_fin'] ?? null;
 $fin = ($fin_raw === '') ? null : $fin_raw;
 
-// FIN DE LA CORRECTION
+// ==========================================================
 
 if (!$livre_id) {
-    // C'est cette ligne qui génère l'erreur de votre screenshot
     echo json_encode(['success' => false, 'message' => 'ID du livre manquant']);
     exit;
 }
 
 try {
+    // On utilise les nouvelles variables ($note, $debut, $fin)
     $stmt = $pdo->prepare("UPDATE livres SET statut = ?, note = ?, date_debut = ?, date_fin = ? WHERE id = ? AND utilisateur_id = ?");
     
     $stmt->execute([$statut, $note, $debut, $fin, $livre_id, $utilisateur_id]);
@@ -55,7 +61,7 @@ try {
     }
 
 } catch (PDOException $e) {
-    error_log("ERREUR SQL FATALE : " . $e->getMessage());
+    error_log("ERREUR SQL modifier-livre : " . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Erreur SQL: ' . $e->getMessage()]);
 }
 ?>
