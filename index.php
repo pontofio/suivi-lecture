@@ -73,7 +73,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
   </main>
 
   <!-- POP-UP ÉDITION LIVRE -->
-  <div id="edit-popup" class="popup" style="display:none;">
+  <div id="popup-edit" class="popup" style="display:none;">
     <div class="popup-content">
       <span class="close-button" id="edit-close">&times;</span>
       <h2>Modifier le livre</h2>

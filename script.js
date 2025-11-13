@@ -1,5 +1,5 @@
 //
-// ─── script.js (Version Corrigée Complète) ────────────────────────────────────────
+// ─── script.js (Version Optimisée) ────────────────────────────────────────
 //
 //  Ce fichier gère :
 //   • recherche.php  → recherche Google Books + popup « Ajouter à ma bibliothèque »
@@ -7,12 +7,8 @@
 //   • index.php        → affichage dernières lectures + popup « Modifier un livre »
 //
 
-
 // ─── 0) DÉCLARATION UNIQUE DE LA BASE URL ─────────────────────────────────────────
-// CORRECTION : Chemin relatif pour fonctionner localement ET en production
 const API_BASE_URL = "."; 
-
-
 
 // ─── 1) CLASSE GLOBALE POUR LA BIBLIOTHÈQUE ─────────────────────────────────────
 class BibliothequeManager {
@@ -32,14 +28,13 @@ class BibliothequeManager {
       if (!data.success) throw new Error(data.message);
 
       this.livres = data.livres.map(item => ({
-          // CORRECTION : S'assurer que l'ID est bien récupéré
           id:          item.id, 
           title:       item.title,
           authors:     item.authors,
           status:      item.statut,
           note:        parseFloat(item.note) || 0,
-          startDate:   item.date_debut,
-          endDate:     item.date_fin,
+          startDate:   item.startDate, // Note: get-livre.php utilise déjà les bons noms
+          endDate:     item.endDate,   //
           genre:       item.genre,
           description: item.description,
           cover: item.cover || ""
@@ -48,192 +43,145 @@ class BibliothequeManager {
       localStorage.setItem("bibliotheque", JSON.stringify(this.livres));
 
       // Si on est sur la page bibliotheque.php, on peut afficher immédiatement
-      // (L'initialisation sur index.php se fait dans le DOMContentLoaded)
       if (window.location.pathname.includes("bibliotheque.php")) {
-        this.afficherLivresFiltres("Tous");
+        // [OPTIMISÉ] Appelle la nouvelle fonction unifiée
+        this.actualiserBibliotheque();
       }
     } catch (err) {
       console.error("Erreur lors du chargement des livres :", err);
     }
   }
 
-  // 1.b) Afficher / filtrer (statut) ← utilisé dans bibliotheque.php
-  afficherLivresFiltres(statut) {
-    
+  // 1.b) [OPTIMISÉ] Gérer le filtre ET le tri en une seule fois
+  actualiserBibliotheque() {
     const container = document.getElementById("library");
-
     if (!container) return; // N'existe que sur bibliotheque.php
-    container.innerHTML = "";
+    
+    // Récupérer les valeurs actuelles du filtre et du tri
+    const statutFiltre = document.getElementById("filtre-statut").value;
+    const critereTri = document.getElementById("tri-critere").value;
 
-    const self = this;  // pour garder la référence correcte à l’instance
-
-    let toDisplay = this.livres;
-    if (statut && statut !== "Tous") {
-      toDisplay = this.livres.filter(l => l.status === statut);
+    // 1. Filtrer
+    let livresAffiches;
+    if (statutFiltre && statutFiltre !== "Tous") {
+        livresAffiches = this.livres.filter(l => l.status === statutFiltre);
+    } else {
+        livresAffiches = [...this.livres];
     }
 
-    if (toDisplay.length === 0) {
-      container.innerHTML = "<p>Aucun livre trouvé pour ce filtre.</p>";
-      return;
+    // 2. Trier (logique de tri de l'ancien 'trierLivres')
+    switch (critereTri) {
+        case "auteur":
+            livresAffiches.sort((a, b) => a.authors.localeCompare(b.authors));
+            break;
+        case "note":
+            livresAffiches.sort((a, b) => (b.note || 0) - (a.note || 0));
+            break;
+        case "genre":
+            livresAffiches.sort((a, b) => (a.genre || '').localeCompare(b.genre || ''));
+            break;
+        case "titre":
+            livresAffiches.sort((a, b) => a.title.localeCompare(b.title));
+            break;
+        case "date-croissant":
+            livresAffiches.sort((a, b) => {
+                if (!a.endDate) return -1;
+                if (!b.endDate) return 1;
+                return new Date(a.endDate) - new Date(b.endDate);
+            });
+            break;
+        case "date-decroissant":
+            livresAffiches.sort((a, b) => {
+                if (!a.endDate) return 1;
+                if (!b.endDate) return -1;
+                return new Date(b.endDate) - new Date(a.endDate);
+            });
+            break;
+        default:
+            // Par défaut, tri par titre si "titre" est sélectionné ou si rien n'est
+            if (critereTri === "titre") {
+                livresAffiches.sort((a, b) => a.title.localeCompare(b.title));
+            }
+            break;
     }
 
-    toDisplay.forEach(livre => {
-      const div = document.createElement("div");
-      const fullDesc = livre.description || "Pas de résumé disponible.";
-      const maxChars = 500;
-      const shortDesc = (fullDesc.length > maxChars)
-    ? fullDesc.substring(0, maxChars).trim() + "…"
-    : fullDesc; 
-      
-      div.className = "grid-item";
-      div.innerHTML = `
-        <div class="cover-container">
-          <div class="cover-info-row">
-            <img
-              src="${livre.cover || ""}"
-              alt="Couverture"
-              onerror="this.style.display='none'"
-              class="book-cover"
-            >
-            <div class="title-author">
-              <p class="book-title">${livre.title}</p>
-              <p class="book-author">${livre.authors}</p>
-            </div>
-          </div>
-          <button class="delete-button">Supprimer</button>
-        </div>
-
-        <div class="book-details">
-          <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
-          <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
-          <p><strong class="label">Statut :</strong> ${livre.status}</p>
-          <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
-        </div>
-      `;
-
-      // 1) clic sur la carte pour ouvrir la popup d’édition (sauf quand on clique sur "Supprimer")
-      div.addEventListener("click", () => {
-        self.ouvrirPopupEdit(livre);
-      });
-
-      // 2) évènement du bouton 'Supprimer' (stopPropagation empêche l'ouverture de la popup)
-      const deleteBtn = div.querySelector(".delete-button");
-      deleteBtn.addEventListener("click", e => {
-        e.stopPropagation();
-        if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
-          self.supprimerLivre(livre);
-        }
-      });
-
-      container.appendChild(div);
-    });
+    // 3. Afficher
+    this._renderBibliotheque(livresAffiches);
   }
 
-  // 1.c) Trier (critère) ← utilisé dans bibliotheque.php
-  trierLivres(critere) {
+  // 1.c) [NOUVEAU] Fonction privée pour "dessiner" la grille (factorisée)
+  _renderBibliotheque(livresArray) {
     const container = document.getElementById("library");
-    if (!container) return;
-
-    const self = this;
-    const statutFiltre = document.getElementById("filtre-statut").value;
-
-    // On part des livres déjà filtrés
-    let sorted;
-    if (statutFiltre && statutFiltre !== "Tous") {
-      sorted = this.livres.filter(l => l.status === statutFiltre);
-    } else {
-      sorted = [...this.livres];
-    }
-
-    switch (critere) {
-      case "auteur":
-        sorted.sort((a, b) => a.authors.localeCompare(b.authors));
-        break;
-      case "note":
-        sorted.sort((a, b) => (b.note || 0) - (a.note || 0));
-        break;
-      case "genre":
-        sorted.sort((a, b) => (a.genre || '').localeCompare(b.genre || ''));
-        break;
-      case "titre":
-        sorted.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "date-croissant":
-        sorted.sort((a, b) => {
-          if (!a.endDate) return -1;
-          if (!b.endDate) return 1;
-          return new Date(a.endDate) - new Date(b.endDate);
-        });
-        break;
-      case "date-decroissant":
-        sorted.sort((a, b) => {
-          if (!a.endDate) return 1;
-          if (!b.endDate) return -1;
-          return new Date(b.endDate) - new Date(a.endDate);
-        });
-        break;
-      default:
-        break;
-    }
-
-    // On vide le conteneur et on ré-affiche les livres triés
+    if (!container) return; 
     container.innerHTML = "";
-    sorted.forEach(livre => {
-      const div = document.createElement("div");
-      const fullDesc = livre.description || "Pas de résumé disponible.";
-      const maxChars = 500;
-      const shortDesc = (fullDesc.length > maxChars)
-    ? fullDesc.substring(0, maxChars).trim() + "…"
-    : fullDesc; 
-  
-      div.className = "grid-item";
-      div.innerHTML = `
-        <div class="cover-container">
-          <div class="cover-info-row">
-            <img
-              src="${livre.cover || ""}"
-              alt="Couverture"
-              onerror="this.style.display='none'"
-              class="book-cover"
-            >
-            <div class="title-author">
-              <p class="book-title">${livre.title}</p>
-              <p class="book-author">${livre.authors}</p>
+    
+    const self = this; // Garder la référence
+
+    if (livresArray.length === 0) {
+        container.innerHTML = "<p>Aucun livre trouvé pour ces critères.</p>";
+        return;
+    }
+
+    // C'est le bloc de code qui était dupliqué
+    livresArray.forEach(livre => {
+        const div = document.createElement("div");
+        const fullDesc = livre.description || "Pas de résumé disponible.";
+        const maxChars = 500;
+        const shortDesc = (fullDesc.length > maxChars)
+            ? fullDesc.substring(0, maxChars).trim() + "…"
+            : fullDesc;
+
+        div.className = "grid-item";
+        // HTML repris de votre script original
+        div.innerHTML = `
+            <div class="cover-container">
+              <div class="cover-info-row">
+                <img
+                  src="${livre.cover || ""}"
+                  alt="Couverture"
+                  onerror="this.style.display='none'"
+                  class="book-cover"
+                >
+                <div class="title-author">
+                  <p class="book-title">${livre.title}</p>
+                  <p class="book-author">${livre.authors}</p>
+                </div>
+              </div>
+              <button class="delete-button">Supprimer</button>
             </div>
-          </div>
-          <button class="delete-button">Supprimer</button>
-        </div>
 
-        <div class="book-details">
-          <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
-          <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
-          <p><strong class="label">Statut :</strong> ${livre.status}</p>
-          <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
-        </div>
-      `;
+            <div class="book-details">
+              <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
+              <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
+              <p><strong class="label">Statut :</strong> ${livre.status}</p>
+              <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
+            </div>
+        `;
 
-      div.addEventListener("click", () => {
-        self.ouvrirPopupEdit(livre);
-      });
+        // Écouteurs (identiques à avant)
+        div.addEventListener("click", () => {
+            self.ouvrirPopupEdit(livre);
+        });
 
-      const deleteBtn = div.querySelector(".delete-button");
-      deleteBtn.addEventListener("click", e => {
-        e.stopPropagation();
-        if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
-          self.supprimerLivre(livre);
-        }
-      });
+        const deleteBtn = div.querySelector(".delete-button");
+        deleteBtn.addEventListener("click", e => {
+            e.stopPropagation();
+            if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
+                self.supprimerLivre(livre);
+            }
+        });
 
-      container.appendChild(div);
+        container.appendChild(div);
     });
   }
 
 
   // 1.d) Ouvrir la popup « Modifier un livre » (utilisé sur index.php et bibliotheque.php)
+  // Cette fonction gère CORRECTEMENT les deux ID différents
   ouvrirPopupEdit(livre) {
     this.livreEnCours = livre;
     
-    // CORRECTION : L'ID de la popup "edit" est différent sur bibliotheque.php
+    // CORRECTION : L'ID de la popup "edit" est différent
     // On doit gérer les deux cas.
     const popupId = document.getElementById("popup-edit") ? "popup-edit" : "edit-popup";
     const popupElt = document.getElementById(popupId);
@@ -264,7 +212,7 @@ class BibliothequeManager {
     if (titleElt)  titleElt.textContent  = livre.title;
     if (authorElt) authorElt.textContent = livre.authors;
     if (genreElt)  genreElt.textContent  = livre.genre;
-    if (descElt)   descElt.innerHTML     = livre.description; // innerHTML au lieu de textContent pour les résumés
+    if (descElt)   descElt.innerHTML     = livre.description;
 
     if (statusElt) statusElt.value = livre.status;
     if (noteElt)   noteElt.value   = livre.note || "";
@@ -277,7 +225,6 @@ class BibliothequeManager {
 
   // 1.e) Fermer la popup « Modifier » et réinitialiser
   fermerPopupEdit() {
-    // CORRECTION : Gérer les deux ID de popup possibles
     const popupElt = document.getElementById("popup-edit") || document.getElementById("edit-popup");
     if (popupElt) {
       popupElt.style.display = "none";
@@ -286,11 +233,9 @@ class BibliothequeManager {
   }
 
   // 1.f) Enregistrer les modifications d’un livre
-  // CORRECTION : Fonction "async" pour attendre la réponse du serveur
   async enregistrerModifications() {
     if (!this.livreEnCours) return;
 
-    // CORRECTION : Gérer les deux ID de popup possibles
     const idPrefix = document.getElementById("popup-edit") ? "popup-edit-" : "edit-";
 
     const statut    = document.getElementById(`${idPrefix}status`).value;
@@ -316,14 +261,14 @@ class BibliothequeManager {
       return;
     }
 
-    // Envoi vers le serveur pour mise à jour en base
+    // Envoi vers le serveur
     try {
       const res = await fetch(`${API_BASE_URL}/modifier-livre.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          livre_id:   this.livreEnCours.id, // L'ID est crucial
+          livre_id:   this.livreEnCours.id,
           statut:     statut,
           note:       note,
           date_debut: startDate,
@@ -332,7 +277,6 @@ class BibliothequeManager {
       });
       const data = await res.json();
       
-      // Si le serveur dit non, on alerte et on s'arrête
       if (!data.success) {
         console.warn("Erreur sur le serveur :", data.message);
         alert("Erreur serveur : " + data.message);
@@ -340,25 +284,25 @@ class BibliothequeManager {
       }
 
       // Le serveur a confirmé, MAINTENANT on met à jour l'objet local
+      // pour correspondre EXACTEMENT à ce qui a été envoyé à la BDD
       this.livreEnCours.status    = statut;
-      this.livreEnCours.note      = parseInt(note) || 0;
-      this.livreEnCours.startDate = startDate;
-      this.livreEnCours.endDate   = endDate;
+      // Si la note est une chaîne vide, on stocke 0 ou null (cohérent avec parseFloat)
+      // Si c'est un nombre, on le parse.
+      this.livreEnCours.note      = note ? parseFloat(note) : 0; 
+      this.livreEnCours.startDate = startDate || null; // Stocke null si la date est vide
+      this.livreEnCours.endDate   = endDate || null;   // Stocke null si la date est vide
       
       localStorage.setItem("bibliotheque", JSON.stringify(this.livres));
 
-      // ==========================================================
-      // CORRECTION : Rafraîchir la bonne section de la bonne page
-      // ==========================================================
+      // [OPTIMISÉ] Rafraîchir la bonne section
       if (document.getElementById("library")) {
           // Si on est sur bibliotheque.php, rafraîchir la grille
-          this.afficherLivresFiltres(document.getElementById("filtre-statut").value || "Tous");
+          this.actualiserBibliotheque();
       } 
       if (document.getElementById("derniers-livres")) {
           // Si on est sur index.php, rafraîchir les dernières lectures
-          afficherDernieresLectures(this); // 'this' est le 'manager'
+          afficherDernieresLectures(this);
       }
-      // ==========================================================
 
       this.fermerPopupEdit();
 
@@ -392,7 +336,6 @@ class BibliothequeManager {
   
   /**
   * Supprime un livre.
-  * CORRECTION : Attend la réponse du serveur avant de mettre à jour l'interface.
   */
   async supprimerLivre(livre) {
     try {
@@ -422,16 +365,14 @@ class BibliothequeManager {
       alert("Erreur de connexion lors de la suppression.");
     }
 
-    // 3) Réafficher la liste mise à jour (en tenant compte du filtre actuel)
-    const filtre = document.getElementById("filtre-statut")?.value || "Tous";
-    this.afficherLivresFiltres(filtre);
+    // 3) [OPTIMISÉ] Réafficher la liste mise à jour
+    this.actualiserBibliotheque();
   }
 }
 
 
 
 // ─── 2) INITIALISATION LORSQUE LE DOM EST CHARGÉ ─────────────────────────────────
-// CORRECTION : Un seul écouteur pour gérer toutes les pages
 document.addEventListener("DOMContentLoaded", () => {
   
   // 1) Créer UNE SEULE instance du manager
@@ -476,27 +417,23 @@ document.addEventListener("DOMContentLoaded", () => {
 // (car elle est sur index.php ET bibliotheque.php)
 // ---------------------------------
 function initialiserPopupEdition(manager) {
-    // S'assurer que la popup existe sur la page
+    // Gère les deux ID possibles
     const popupId = document.getElementById("popup-edit") ? "popup-edit" : "edit-popup";
     const popupElt = document.getElementById(popupId);
     if (!popupElt) return;
 
-    // Définir les préfixes d'ID en fonction de la popup trouvée
     const idPrefix = (popupId === "popup-edit") ? "popup-edit-" : "edit-";
 
     const popupEditClose  = document.getElementById(`${idPrefix}close`);
     const popupEditCancel = document.getElementById(`${idPrefix}cancel`);
     const popupEditSave   = document.getElementById(`${idPrefix}save`);
 
-    // Fermer la popup via la croix
     if (popupEditClose) {
         popupEditClose.addEventListener("click", () => manager.fermerPopupEdit());
     }
-    // Fermer via « Annuler »
     if (popupEditCancel) {
         popupEditCancel.addEventListener("click", () => manager.fermerPopupEdit());
     }
-    // Enregistrer → appeler manager.enregistrerModifications()
     if (popupEditSave) {
         popupEditSave.addEventListener("click", async () => {
             console.log("🔔 clic sur Enregistrer détecté");
@@ -510,7 +447,7 @@ function initialiserPopupEdition(manager) {
 function initialiserRecherche(manager) {
   const searchForm = document.getElementById("search-form");
   const resultDiv  = document.getElementById("result");
-  if (!searchForm) return; // S'arrêter si on n'est pas sur la bonne page
+  if (!searchForm) return; 
 
   // 3.a) Soumettre le formulaire → requête Google Books
   searchForm.addEventListener("submit", event => {
@@ -622,7 +559,7 @@ function initialiserRecherche(manager) {
     const startDate = document.getElementById("popup-add-start").value;
     const endDate   = document.getElementById("popup-add-end").value;
 
-    // Validations métier :
+    // Validations métier
     if (statut === "À lire" && (startDate || endDate)) {
       alert("Un livre 'À lire' ne doit pas avoir de date.");
       return;
@@ -649,7 +586,7 @@ function initialiserRecherche(manager) {
       genre:       manager.livreTemporaire.genre,
       status:      statut,
       note:        parseInt(note) || 0,
-      startDate:   startDate, // Envoyer les dates telles quelles
+      startDate:   startDate,
       endDate:     endDate
     };
 
@@ -673,17 +610,13 @@ function initialiserBibliotheque(manager) {
   
   if (!selectFiltre) return; // S'arrêter si on n'est pas sur la bonne page
 
-  // 4.a) Filtrer
-  selectFiltre.addEventListener("change", e => {
-    // On applique le filtre, puis on applique le tri actuel par-dessus
-    manager.afficherLivresFiltres(e.target.value);
-    manager.trierLivres(selectTri.value);
+  // 4.a) & 4.b) [OPTIMISÉ] Filtrer et Trier
+  // Les deux appellent la même fonction qui gère tout
+  selectFiltre.addEventListener("change", () => {
+    manager.actualiserBibliotheque();
   });
-
-  // 4.b) Trier
-  selectTri.addEventListener("change", e => {
-    // On trie (la fonction de tri tiendra compte du filtre)
-    manager.trierLivres(e.target.value);
+  selectTri.addEventListener("change", () => {
+    manager.actualiserBibliotheque();
   });
   
   // 4.d) Exporter CSV
@@ -790,13 +723,13 @@ function initialiserBibliotheque(manager) {
           alert(`${nouveauxAjoutes} nouveau(x) livre(s) ajouté(s).`);
           // Recharger tout pour être synchro
           await manager.chargerLivres();
-          manager.trierLivres(selectTri.value); // Ré-appliquer le tri
+          // manager.trierLivres(selectTri.value); // ANCIEN
+          manager.actualiserBibliotheque(); // NOUVEAU
 
         } catch (err) {
           console.error("Erreur import CSV :", err);
           alert("Erreur lors de l’importation (voir console).");
         } finally {
-          // Réinitialiser le champ pour pouvoir importer le même fichier 2x
           event.target.value = null;
         }
       };
@@ -804,7 +737,7 @@ function initialiserBibliotheque(manager) {
     });
   }
 
-  // 4.f) Compléter les fiches manquantes (couverture/genre/description)
+  // 4.f) Compléter les fiches manquantes
   const enrichBtn = document.getElementById("enrichir-fiches");
   if (enrichBtn) {
     enrichBtn.addEventListener("click", async () => {
@@ -812,13 +745,10 @@ function initialiserBibliotheque(manager) {
       enrichBtn.textContent = "Enrichissement...";
       
       for (let livre of manager.livres) {
-        // On enrichit si la couverture manque ET que ce n'est pas un livre "A lire"
-        // (pour éviter d'enrichir toute la wishlist d'un coup)
         if (!livre.cover && livre.status !== "À lire") {
           try {
             const enrichi = await enrichirLivreViaAPI(livre.title, livre.authors);
             
-            // On vérifie que les données trouvées sont "meilleures"
             if (enrichi.cover) livre.cover = enrichi.cover;
             if (enrichi.description && livre.description === "Pas de résumé disponible.") livre.description = enrichi.description;
             if (enrichi.genre && livre.genre === "Inconnu") livre.genre = enrichi.genre;
@@ -834,20 +764,18 @@ function initialiserBibliotheque(manager) {
                 note:       livre.note,
                 date_debut: livre.startDate,
                 date_fin:   livre.endDate
-                // Note : On ne modifie pas le titre/auteur ici
               })
             });
           } catch(err) { 
              console.warn("Erreur enrichissement pour", livre.title, err);
-             /* on continue même en cas d’erreur */ 
           }
         }
       }
       
-      // Mettre à jour l'état local et ré-afficher
       localStorage.setItem("bibliotheque", JSON.stringify(manager.livres));
-      manager.afficherLivresFiltres(selectFiltre.value || "Tous");
-      manager.trierLivres(selectTri.value);
+      // manager.afficherLivresFiltres(selectFiltre.value || "Tous"); // ANCIEN
+      // manager.trierLivres(selectTri.value); // ANCIEN
+      manager.actualiserBibliotheque(); // NOUVEAU
       
       enrichBtn.disabled = false;
       enrichBtn.textContent = "Compléter";
@@ -883,10 +811,11 @@ async function enrichirLivreViaAPI(titre, auteur) {
 /**
  * Affiche dans la zone #derniers-livres les 5 livres "Terminé" 
  * les plus récents (triés par endDate décroissante).
+ * C'est cette fonction qui remplace 'get-dernier-livres.php'
  */
 function afficherDernieresLectures(manager) {
   const conteneur = document.getElementById("derniers-livres");
-  if (!conteneur) return;  // S'arrêter si l'id n'existe pas (on n'est pas sur index.php)
+  if (!conteneur) return;  
 
   // 1) On ne garde que les livres terminés
   const livresTermines = manager.livres.filter(l => l.status === "Terminé");
@@ -903,7 +832,6 @@ function afficherDernieresLectures(manager) {
 
   conteneur.innerHTML = ""; // Vider
 
-  // 4) S’il n’y a aucun livre terminé, on affiche un message
   if (derniers.length === 0) {
     conteneur.innerHTML = `
       <p style="color: var(--gray-600); text-align: center; width: 100%;">
@@ -916,7 +844,6 @@ function afficherDernieresLectures(manager) {
   // 5) Pour chaque livre “Terminé”, on crée une “carte”
   derniers.forEach(livre => {
     const card = document.createElement("div");
-    // Utilise les classes de style.css pour le dashboard
     card.className = "grid-item"; 
 
     card.innerHTML = `

@@ -9,8 +9,8 @@ if (!isset($_SESSION['utilisateur_id'])) {
 }
 
 try {
-    // CORRECTION : "id," est ajouté au début de la sélection
-    $stmt = $pdo->prepare("SELECT id, titre AS title, auteur AS authors, statut , note, date_debut AS startDate, date_fin AS endDate, genre, description, couverture AS cover FROM livres WHERE utilisateur_id = ?");
+    // CORRECTION : S'assurer que "id," est bien au début de la sélection
+    $stmt = $pdo->prepare("SELECT id, titre AS title, auteur AS authors, statut, note, date_debut AS startDate, date_fin AS endDate, genre, description, couverture AS cover FROM livres WHERE utilisateur_id = ?");
     $stmt->execute([$_SESSION['utilisateur_id']]);
     $livres = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
