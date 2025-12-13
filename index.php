@@ -17,7 +17,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Accueil - Suivi de lectures</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=<?php echo filemtime('style.css'); ?>" />
 </head>
 <body>
   <div id="menu-placeholder"></div>
@@ -26,7 +26,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
     <h1>Tableau de bord lecture</h1>
 
     <div class="dashboard">
-      <!-- Partie gauche : challenge, stats, derniers livres -->
       <div class="dashboard-left">
         <div class="graph-container">
           <div class="challenge-block">
@@ -64,7 +63,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
         </div>
       </div>
 
-      <!-- Partie droite : mini bibliothèque type RecyclerView -->
       <div class="dashboard-right">
         <h2>Mes dernières lectures</h2>
         <div id="derniers-livres" class="grid-container"></div>
@@ -72,7 +70,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
     </div>
   </main>
 
-  <!-- POP-UP ÉDITION LIVRE -->
   <div id="edit-popup" class="popup" style="display:none;">
     <div class="popup-content">
       <span class="close-button" id="edit-close">&times;</span>
@@ -126,6 +123,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=<?php echo filemtime('script.js'); ?>"></script>
 </body>
 </html>

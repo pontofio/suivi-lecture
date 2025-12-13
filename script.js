@@ -11,6 +11,7 @@
 // ─── 0) DÉCLARATION UNIQUE DE LA BASE URL ─────────────────────────────────────────
 // CORRECTION : Chemin relatif pour fonctionner localement ET en production
 const API_BASE_URL = "."; 
+let activeCharts = {}; // Pour stocker et détruire les anciens graphiques
 
 
 
@@ -354,8 +355,13 @@ class BibliothequeManager {
           // Si on est sur bibliotheque.php, rafraîchir la grille
           this.afficherLivresFiltres(document.getElementById("filtre-statut").value || "Tous");
       } 
+      
       if (document.getElementById("derniers-livres")) {
-          // Si on est sur index.php, rafraîchir les dernières lectures
+          // Si on est sur index.php, rafraîchir TOUT le tableau de bord
+          mettreAJourChallenge(this.livres);
+          initialiserGraphiqueMois(this.livres);
+          initialiserGraphiqueAnnee(this.livres);
+          initialiserGraphiqueGenres(this.livres);
           afficherDernieresLectures(this); // 'this' est le 'manager'
       }
       // ==========================================================
@@ -432,17 +438,20 @@ class BibliothequeManager {
 
 // ─── 2) INITIALISATION LORSQUE LE DOM EST CHARGÉ ─────────────────────────────────
 // CORRECTION : Un seul écouteur pour gérer toutes les pages
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   
   // 1) Créer UNE SEULE instance du manager
   const manager = new BibliothequeManager();
 
-  // 2) Charger le menu (une seule fois)
+  // 2) Charger le menu (attendre qu'il soit inséré)
+  let menuLoadPromise = Promise.resolve();
   const menuPlaceholder = document.getElementById("menu-placeholder");
   if (menuPlaceholder) {
-    fetch("menu.html")
+    menuLoadPromise = fetch("menu.html")
       .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
-      .then(html => menuPlaceholder.innerHTML = html)
+      .then(html => {
+        menuPlaceholder.innerHTML = html;
+      })
       .catch(err => {
         console.warn("Impossible de charger menu.html :", err);
         menuPlaceholder.innerHTML = "<p>Menu non disponible.</p>";
@@ -450,25 +459,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 3) Charger les livres (une seule fois)
-  manager.chargerLivres().then(() => {
-      // 4) Une fois les livres chargés, initialiser les sections spécifiques
-      const page = window.location.pathname;
+  await manager.chargerLivres();
+  
+  // 4) Attendre que le menu soit chargé avant d'initialiser les boutons
+  await menuLoadPromise;
+  
+  // 5) Une fois les livres ET le menu chargés, initialiser les sections spécifiques
+  const page = window.location.pathname;
 
-      if (page.includes("index.php")) {
-          // Si on est sur le tableau de bord
-          afficherDernieresLectures(manager);
-          initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
-      }
-      else if (page.includes("recherche.php")) {
-          // Si on est sur la recherche
-          initialiserRecherche(manager);
-      }
-      else if (page.includes("bibliotheque.php")) {
-          // Si on est sur la bibliothèque
-          initialiserBibliotheque(manager);
-          initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
-      }
-  });
+  if (page.includes("index.php")) {
+      // Si on est sur le tableau de bord
+      initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
+      
+      // Mettre à jour tous les composants
+      mettreAJourChallenge(manager.livres);
+      initialiserGraphiqueMois(manager.livres);
+      initialiserGraphiqueAnnee(manager.livres);
+      initialiserGraphiqueGenres(manager.livres);
+      afficherDernieresLectures(manager); // 'manager' est disponible ici
+      
+  }
+  else if (page.includes("recherche.php")) {
+      // Si on est sur la recherche
+      initialiserRecherche(manager);
+  }
+  else if (page.includes("bibliotheque.php")) {
+      // Si on est sur la bibliothèque
+      initialiserBibliotheque(manager);
+      initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
+  }
+  
+  // 6) Initialiser les boutons d'import/export du menu (disponibles partout)
+  initialiserBoutonsMenu(manager);
 });
 
 // ---------------------------------
@@ -939,5 +961,174 @@ function afficherDernieresLectures(manager) {
     });
     
     conteneur.appendChild(card);
+  });
+}
+
+
+//
+// ─── 6) FONCTIONS DU TABLEAU DE BORD (INDEX.PHP) ───────────────────────────────────
+//
+
+/**
+ * Met à jour le bloc "Challenge Lecture"
+ */
+function mettreAJourChallenge(livres) {
+  const objectif = 30; // Vous pouvez changer l'objectif ici
+  const conteneur = document.querySelector(".challenge-block");
+  if (!conteneur) return; // S'arrêter si on n'est pas sur la bonne page
+
+  const livresTermines = livres.filter(l => l.status === "Terminé").length;
+  const pourcentage = objectif > 0 ? (livresTermines / objectif) * 100 : 0;
+
+  document.getElementById("progress-numbers").textContent = `${livresTermines} / ${objectif}`;
+  document.getElementById("progress-bar-fill").style.width = `${pourcentage}%`;
+  document.getElementById("progress-percentage").textContent = `${Math.round(pourcentage)}%`;
+}
+
+/**
+ * Crée ou met à jour le graphique "Livres lus par mois"
+ * (Affiche les 12 derniers mois)
+ */
+function initialiserGraphiqueMois(livres) {
+  const ctx = document.getElementById("graph-mois")?.getContext("2d");
+  if (!ctx) return;
+
+  const labelsMois = [];
+  const anneeActuelle = new Date().getFullYear();
+  const moisActuel = new Date().getMonth(); // 0-11
+
+  // Noms des mois pour l'affichage
+  const nomsMois = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+  
+  // Initialiser les 12 derniers mois à 0
+  let dataMois = new Array(12).fill(0);
+
+  // Générer les labels pour les 12 derniers mois
+  for (let i = 0; i < 12; i++) {
+    const moisIndex = (moisActuel - i + 12) % 12;
+    labelsMois.push(nomsMois[moisIndex]);
+  }
+  labelsMois.reverse(); // Mettre dans le bon ordre chronologique
+
+
+  livres.forEach(livre => {
+    if (livre.status === "Terminé" && livre.endDate) {
+      const dateFin = new Date(livre.endDate);
+      const diffMois = (anneeActuelle - dateFin.getFullYear()) * 12 + (moisActuel - dateFin.getMonth());
+      
+      // Si le livre a été terminé dans les 11 derniers mois (0-11)
+      if (diffMois >= 0 && diffMois < 12) {
+        // L'index dans le tableau dataMois (0 = mois le plus ancien, 11 = mois actuel)
+        const dataIndex = 11 - diffMois;
+        dataMois[dataIndex]++;
+      }
+    }
+  });
+
+  // Détruire l'ancien graphique s'il existe
+  if (activeCharts.mois) {
+    activeCharts.mois.destroy();
+  }
+
+  activeCharts.mois = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labelsMois,
+      datasets: [{
+        label: "Livres lus",
+        data: dataMois,
+        backgroundColor: "#a78bfa",
+        borderColor: "#8b5cf6",
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+/**
+ * Crée ou met à jour le graphique "Livres lus par année"
+ */
+function initialiserGraphiqueAnnee(livres) {
+  const ctx = document.getElementById("graph-annee")?.getContext("2d");
+  if (!ctx) return;
+
+  const annees = {};
+  livres.forEach(livre => {
+    if (livre.status === "Terminé" && livre.endDate) {
+      const annee = new Date(livre.endDate).getFullYear();
+      annees[annee] = (annees[annee] || 0) + 1;
+    }
+  });
+
+  const labelsAnnees = Object.keys(annees).sort();
+  const dataAnnees = labelsAnnees.map(annee => annees[annee]);
+
+  if (activeCharts.annee) {
+    activeCharts.annee.destroy();
+  }
+
+  activeCharts.annee = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labelsAnnees,
+      datasets: [{
+        label: "Livres lus",
+        data: dataAnnees,
+        backgroundColor: "#c4b5fd",
+        borderColor: "#8b5cf6",
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+/**
+ * Crée ou met à jour le graphique "Répartition des genres"
+ */
+function initialiserGraphiqueGenres(livres) {
+  const ctx = document.getElementById("graph-genres")?.getContext("2d");
+  if (!ctx) return;
+
+  const genres = {};
+  livres.forEach(livre => {
+    // Regrouper les genres inconnus ou non définis
+    const genre = livre.genre ? livre.genre.trim() : "Inconnu";
+    genres[genre] = (genres[genre] || 0) + 1;
+  });
+
+  if (activeCharts.genres) {
+    activeCharts.genres.destroy();
+  }
+
+  activeCharts.genres = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: Object.keys(genres),
+      datasets: [{
+        label: "Répartition",
+        data: Object.values(genres),
+        backgroundColor: [
+          "#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#e9d5ff",
+          "#f3e8ff", "#d1d5db", "#9ca3af", "#6b7280"
+        ],
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+    }
   });
 }
