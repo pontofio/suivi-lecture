@@ -1,4 +1,7 @@
 <?php
+
+require_once __DIR__ . '/../config/dp.php';
+
 session_start();
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -12,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require 'config.php'; // contient $pdo
 if (!isset($_SESSION['utilisateur_id'])) {
     echo json_encode(['success' => false, 'message' => 'Non authentifié']);
     exit;

@@ -25,7 +25,7 @@ class BibliothequeManager {
   // 1.a) Charger la liste des livres depuis get-livre.php (et stocker en localStorage)
   async chargerLivres() {
     try {
-      const res  = await fetch(`${API_BASE_URL}/get-livre.php`);
+      const res  = await fetch(`${API_BASE_URL}/api/get-livres.php`);
       const data = await res.json();
       console.log("→ Données brutes reçues de get-livre.php :", data.livres);
 
@@ -318,7 +318,7 @@ class BibliothequeManager {
 
     // Envoi vers le serveur pour mise à jour en base
     try {
-      const res = await fetch(`${API_BASE_URL}/modifier-livre.php`, {
+      const res = await fetch(`${API_BASE_URL}/api/modifier-livre.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -371,7 +371,7 @@ class BibliothequeManager {
   // 1.g) Ajouter un livre en base (pop « Ajouter ») ← utilisé sur recherche.php
   async ajouterLivre(bookData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/ajouter-livre.php`, {
+      const response = await fetch(`${API_BASE_URL}/api/ajouter-livre.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -397,7 +397,7 @@ class BibliothequeManager {
   async supprimerLivre(livre) {
     try {
       // 1) Appeler l’API D'ABORD
-      const res = await fetch(`${API_BASE_URL}/supprimer-livre.php`, {
+      const res = await fetch(`${API_BASE_URL}/api/supprimer-livre.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -440,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 2) Charger le menu (une seule fois)
   const menuPlaceholder = document.getElementById("menu-placeholder");
   if (menuPlaceholder) {
-    fetch("menu.html")
+    fetch("includes/menu.html")
       .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
       .then(html => menuPlaceholder.innerHTML = html)
       .catch(err => {
@@ -824,7 +824,7 @@ function initialiserBibliotheque(manager) {
             if (enrichi.genre && livre.genre === "Inconnu") livre.genre = enrichi.genre;
 
             // Mettre à jour en base
-            await fetch(`${API_BASE_URL}/modifier-livre.php`, {
+            await fetch(`${API_BASE_URL}/api/modifier-livre.php`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",

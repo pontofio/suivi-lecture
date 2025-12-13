@@ -1,7 +1,8 @@
 <?php
 session_start();
+require './config/dp.php';
 if (!isset($_SESSION['utilisateur_id'])) {
-    header("Location: login.php");
+    header("Location: ./auth/login.php");
     exit;
 }
 ?>
@@ -10,7 +11,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
 <head>
   <meta charset="UTF-8">
   <title>Recherche de livres</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <div id="menu-placeholder"></div>
@@ -168,6 +169,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
 
 
   <!-- Inclure UN SEUL fois script.js -->
-  <script src="script.js" defer></script>
+  <script src="assets/js/script.js" defer></script>
 </body>
 </html>

@@ -4,9 +4,9 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-require 'config.php';
+require './config/dp.php';
 if (!isset($_SESSION['utilisateur_id'])) {
-  header("Location: login.php");
+  header("Location: ./auth/login.php");
   exit;
 }
 ?>
@@ -17,7 +17,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Accueil - Suivi de lectures</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <div id="menu-placeholder"></div>
@@ -126,6 +126,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="script.js"></script>
+  <script src="assets/js/script.js"></script>
 </body>
 </html>

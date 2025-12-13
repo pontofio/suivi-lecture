@@ -1,9 +1,9 @@
 <?php
 session_start();
-require 'config.php';
+require '../config/dp.php';
 session_unset();  // Supprime toutes les variables de session
 session_destroy(); // Détruit la session
 
 // Redirige vers la page de login
-header("Location: login.php");
+header("Location: ./login.php");
 exit;

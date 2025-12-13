@@ -1,7 +1,9 @@
 <?php
+
+require_once __DIR__ . '/../config/dp.php';
+
 session_start();
 header('Content-Type: application/json');
-require 'config.php';
 
 if (!isset($_SESSION['utilisateur_id'])) {
     echo json_encode(['success' => false, 'message' => 'Non authentifié.']);

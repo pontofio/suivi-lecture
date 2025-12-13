@@ -1,5 +1,7 @@
 <?php
-require 'config.php';
+
+require_once __DIR__ . '/../config/dp.php';
+
 session_start();
 header('Content-Type: application/json');
 

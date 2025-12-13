@@ -5,8 +5,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-
-require 'config.php';
+require '../config/dp.php';
 
 // Si le formulaire est soumis
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -34,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$email, $hash]);
 
             $_SESSION['utilisateur_id'] = $pdo->lastInsertId();
-            header("Location: index.php");
+            header("Location: ../index.php");
             exit;
         }
     }
@@ -46,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8">
   <title>Créer un compte</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
     <div class="auth-container">
@@ -69,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button type="submit">Créer le compte</button>
   </form>
 
-  <p>Déjà inscrit ? <a href="login.html">Se connecter</a></p>
+  <p>Déjà inscrit ? <a href="./login.php">Se connecter</a></p>
   </div>
 </body>
 </html>

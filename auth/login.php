@@ -1,17 +1,13 @@
 <?php
-#okok
 session_start();
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-
-require 'config.php';
+require '../config/dp.php';
 
 $email = $_POST['email'] ?? '';
 $mot_de_passe = $_POST['mot_de_passe'] ?? '';
-
-require_once("config.php");
 
 $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE email = ?");
 $stmt->execute([$email]);
@@ -19,7 +15,7 @@ $user = $stmt->fetch();
 
 if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
   $_SESSION['utilisateur_id'] = $user['id'];
-  header("Location: index.php");
+  header("Location: ../index.php");
   exit;
 } else {
   if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -32,7 +28,7 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
 <head>
   <meta charset="UTF-8">
   <title>Connexion</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
   <div class="auth-container">
@@ -46,7 +42,7 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
     <?php if (isset($error)): ?>
       <p class="error-message"><?= htmlspecialchars($error) ?></p>
     <?php endif; ?>
-    <p>Pas encore de compte ? <a href="register.php">Créer un compte</a></p>
+    <p>Pas encore de compte ? <a href="./register.php">Créer un compte</a></p>
   </div>
 </body>
 </html>

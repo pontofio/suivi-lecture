@@ -1,6 +1,8 @@
 <?php
+
+require_once __DIR__ . '/../config/dp.php';
+
 session_start();
-require 'config.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['utilisateur_id'])) {
