@@ -5,12 +5,7 @@ require_once __DIR__ . '/../config/dp.php';
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-<<<<<<< HEAD:api/modifier-livre.php
 session_start(); // CORRECTION : Il faut démarrer la session
-=======
-require 'config.php';
-session_start();
->>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87:modifier-livre.php
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['utilisateur_id'])) {
