@@ -438,17 +438,20 @@ class BibliothequeManager {
 
 // ─── 2) INITIALISATION LORSQUE LE DOM EST CHARGÉ ─────────────────────────────────
 // CORRECTION : Un seul écouteur pour gérer toutes les pages
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   
   // 1) Créer UNE SEULE instance du manager
   const manager = new BibliothequeManager();
 
-  // 2) Charger le menu (une seule fois)
+  // 2) Charger le menu (attendre qu'il soit inséré)
+  let menuLoadPromise = Promise.resolve();
   const menuPlaceholder = document.getElementById("menu-placeholder");
   if (menuPlaceholder) {
-    fetch("menu.html")
+    menuLoadPromise = fetch("menu.html")
       .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
-      .then(html => menuPlaceholder.innerHTML = html)
+      .then(html => {
+        menuPlaceholder.innerHTML = html;
+      })
       .catch(err => {
         console.warn("Impossible de charger menu.html :", err);
         menuPlaceholder.innerHTML = "<p>Menu non disponible.</p>";
@@ -456,32 +459,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 3) Charger les livres (une seule fois)
-  manager.chargerLivres().then(() => {
-      // 4) Une fois les livres chargés, initialiser les sections spécifiques
-      const page = window.location.pathname;
+  await manager.chargerLivres();
+  
+  // 4) Attendre que le menu soit chargé avant d'initialiser les boutons
+  await menuLoadPromise;
+  
+  // 5) Une fois les livres ET le menu chargés, initialiser les sections spécifiques
+  const page = window.location.pathname;
 
-      if (page.includes("index.php")) {
-          // Si on est sur le tableau de bord
-          initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
-          
-          // Mettre à jour tous les composants
-          mettreAJourChallenge(manager.livres);
-          initialiserGraphiqueMois(manager.livres);
-          initialiserGraphiqueAnnee(manager.livres);
-          initialiserGraphiqueGenres(manager.livres);
-          afficherDernieresLectures(manager); // 'manager' est disponible ici
-          
-      }
-      else if (page.includes("recherche.php")) {
-          // Si on est sur la recherche
-          initialiserRecherche(manager);
-      }
-      else if (page.includes("bibliotheque.php")) {
-          // Si on est sur la bibliothèque
-          initialiserBibliotheque(manager);
-          initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
-      }
-  });
+  if (page.includes("index.php")) {
+      // Si on est sur le tableau de bord
+      initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
+      
+      // Mettre à jour tous les composants
+      mettreAJourChallenge(manager.livres);
+      initialiserGraphiqueMois(manager.livres);
+      initialiserGraphiqueAnnee(manager.livres);
+      initialiserGraphiqueGenres(manager.livres);
+      afficherDernieresLectures(manager); // 'manager' est disponible ici
+      
+  }
+  else if (page.includes("recherche.php")) {
+      // Si on est sur la recherche
+      initialiserRecherche(manager);
+  }
+  else if (page.includes("bibliotheque.php")) {
+      // Si on est sur la bibliothèque
+      initialiserBibliotheque(manager);
+      initialiserPopupEdition(manager); // Attacher les écouteurs pour la popup
+  }
+  
+  // 6) Initialiser les boutons d'import/export du menu (disponibles partout)
+  initialiserBoutonsMenu(manager);
 });
 
 // ---------------------------------
