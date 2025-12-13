@@ -26,7 +26,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
     <h1>Tableau de bord lecture</h1>
 
     <div class="dashboard">
-      <!-- Partie gauche : challenge, stats, derniers livres -->
       <div class="dashboard-left">
         <div class="graph-container">
           <div class="challenge-block">
@@ -64,7 +63,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
         </div>
       </div>
 
-      <!-- Partie droite : mini bibliothèque type RecyclerView -->
       <div class="dashboard-right">
         <h2>Mes dernières lectures</h2>
         <div id="derniers-livres" class="grid-container"></div>
@@ -72,7 +70,6 @@ if (!isset($_SESSION['utilisateur_id'])) {
     </div>
   </main>
 
-  <!-- POP-UP ÉDITION LIVRE -->
   <div id="edit-popup" class="popup" style="display:none;">
     <div class="popup-content">
       <span class="close-button" id="edit-close">&times;</span>

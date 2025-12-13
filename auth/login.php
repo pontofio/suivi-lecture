@@ -4,11 +4,22 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
+<<<<<<< HEAD:auth/login.php
 require '../config/dp.php';
+=======
+// CORRECTION : 'require' une seule fois au début
+require 'config.php';
+>>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87:login.php
 
 $email = $_POST['email'] ?? '';
 $mot_de_passe = $_POST['mot_de_passe'] ?? '';
 
+<<<<<<< HEAD:auth/login.php
+=======
+// CORRECTION : Suppression du 'require_once' en double
+// require_once("config.php");
+
+>>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87:login.php
 $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch();
@@ -28,7 +39,11 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
 <head>
   <meta charset="UTF-8">
   <title>Connexion</title>
+<<<<<<< HEAD:auth/login.php
   <link rel="stylesheet" href="../assets/css/style.css">
+=======
+  <link rel="stylesheet" href="style.css?v=<?php echo filemtime('style.css'); ?>">
+>>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87:login.php
 </head>
 <body>
   <div class="auth-container">
@@ -46,4 +61,3 @@ if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
   </div>
 </body>
 </html>
-
