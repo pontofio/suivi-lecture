@@ -1839,3 +1839,85 @@ button:disabled {
     height: 150px;
   }
 }
+
+/* === POPUP DE PROGRESSION (STYLE AVEC RAYURES ANIMÉES) === */
+.loader-container {
+  width: 100%;
+  max-width: 450px; /* Un peu plus large pour l'effet */
+  text-align: center;
+  padding: 10px;
+}
+
+.loader-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  margin-bottom: 1.2rem;
+  color: var(--gray-800);
+}
+
+/* Le fond gris de la barre */
+.loader-bar-bg {
+  width: 100%;
+  height: 16px; /* Un peu plus épais pour bien voir les rayures */
+  background-color: var(--gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 1.5rem 0;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* Petit effet de profondeur */
+}
+
+/* La partie remplie avec l'animation */
+.loader-bar-fill {
+  height: 100%;
+  width: 0%; /* Sera modifié par le JS */
+  border-radius: 10px;
+  
+  /* C'est ici que la magie opère : on superpose deux fonds */
+  background-image: 
+    /* 1. Couche supérieure : Les rayures diagonales blanches semi-transparentes */
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.3) 0px,
+      rgba(255, 255, 255, 0.3) 15px, /* Largeur de la bande blanche */
+      transparent 15px,
+      transparent 30px               /* Largeur de l'espace transparent */
+    ),
+    /* 2. Couche inférieure : Le dégradé violet de base */
+    linear-gradient(90deg, var(--primary-500), var(--primary-700));
+
+  /* On définit la taille du motif pour que l'animation boucle parfaitement */
+  background-size: 42px 42px, 100% 100%;
+
+  /* L'animation qui fait bouger le fond */
+  animation: moveStripes 1.5s linear infinite;
+}
+
+/* Définition du mouvement */
+@keyframes moveStripes {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    /* On déplace seulement la couche des rayures de la taille du motif (42px) vers la droite */
+    background-position: 42px 0, 0 0;
+  }
+}
+
+.loader-text {
+  font-size: 1rem;
+  color: var(--gray-700);
+  margin-top: 0.8rem;
+  font-weight: 600;
+}
+
+.loader-details {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  margin-top: 0.4rem;
+  height: 1.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}

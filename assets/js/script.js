@@ -57,6 +57,134 @@ class BibliothequeManager {
       console.error("Erreur lors du chargement des livres :", err);
     }
   }
+// Nouvelle méthode pour générer le HTML d'un livre (avec étoiles !)
+  creerCarteLivre(livre) {
+    const div = document.createElement("div");
+    div.className = "grid-item";
+
+    // 1. Gestion du résumé (nettoyage des balises HTML + raccourcissement)
+    const rawDesc = livre.description || "Pas de résumé disponible.";
+    // On retire les balises HTML éventuelles pour éviter de casser l'affichage
+    const textDesc = rawDesc.replace(/<[^>]*>?/gm, ''); 
+    const shortDesc = (textDesc.length > 150) 
+      ? textDesc.substring(0, 150).trim() + "…" 
+      : textDesc;
+
+    // 2. Génération des étoiles
+    let etoilesHtml = '<span style="color:var(--gray-400); font-size:0.9rem;">Non noté</span>';
+    if (livre.note > 0) {
+      etoilesHtml = "";
+      for (let i = 1; i <= 5; i++) {
+        // Couleur or si active, gris sinon
+        const color = i <= livre.note ? "var(--warning-500)" : "var(--gray-300)";
+        etoilesHtml += `<span style="color:${color}; font-size:1.2rem;">★</span>`;
+      }
+    }
+
+    // 3. Construction du HTML
+    div.innerHTML = `
+      <div class="cover-container">
+        <div class="cover-info-row">
+          <img src="${livre.cover || ""}" alt="Couverture" onerror="this.style.display='none'" class="book-cover">
+          <div class="title-author">
+            <p class="book-title">${livre.title}</p>
+            <p class="book-author">${livre.authors}</p>
+          </div>
+        </div>
+        <button class="delete-button">Supprimer</button>
+      </div>
+
+      <div class="book-details">
+        <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
+        <p style="display:flex; align-items:center; gap:5px;">
+           <strong class="label">Note :</strong> ${etoilesHtml}
+        </p>
+        <p><strong class="label">Statut :</strong> ${livre.status}</p>
+        <p class="description-text">${shortDesc}</p>
+      </div>
+    `;
+
+    // 4. Ajout des événements (Click & Supprimer)
+    div.addEventListener("click", () => this.ouvrirPopupEdit(livre));
+
+    const deleteBtn = div.querySelector(".delete-button");
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // On utilise votre nouvelle popup si vous voulez, ou le confirm classique
+      if (confirm("Voulez-vous vraiment supprimer ce livre ?")) {
+        this.supprimerLivre(livre);
+      }
+    });
+
+    return div;
+  }
+
+  // Helper pour créer une carte de résultat (Recherche Google ou Suggestion)
+  creerCarteGoogle(googleBookItem) {
+    const info = googleBookItem.volumeInfo;
+    const div = document.createElement("div");
+    div.classList.add("result-item");
+
+    // HTML de la carte
+    div.innerHTML = `
+      <div class="image-and-button">
+        <img src="${info.imageLinks?.thumbnail || ""}" alt="Couverture" onerror="this.style.display='none'">
+        <button class="add-button">Ajouter</button>
+      </div>
+      <div class="book-content">
+        <h3>${info.title || "Titre inconnu"}</h3>
+        <h4>${info.authors ? info.authors.join(", ") : "Auteur inconnu"}</h4>
+        <p>${info.description ? info.description.substring(0, 200) + "…" : "Pas de résumé disponible."}</p>
+      </div>
+    `;
+
+    // Gestion du clic "Ajouter"
+    const btn = div.querySelector(".add-button");
+    btn.addEventListener("click", () => {
+      // Préparation de l'objet temporaire
+      this.livreTemporaire = {
+        title:       info.title || "Titre inconnu",
+        authors:     info.authors ? info.authors.join(", ") : "Auteur inconnu",
+        cover:       info.imageLinks?.thumbnail || "",
+        description: info.description?.trim() || "Pas de résumé disponible.",
+        genre:       Array.isArray(info.categories) && info.categories.length > 0
+                      ? info.categories[0].trim() : "Inconnu",
+        status:      "À lire",
+        note:        "",
+        startDate:   "",
+        endDate:     ""
+      };
+
+      // Remplissage de la popup (On reprend votre logique existante)
+      document.getElementById("popup-add-title").textContent   = this.livreTemporaire.title;
+      document.getElementById("popup-add-authors").textContent = this.livreTemporaire.authors;
+      
+      const coverElt = document.getElementById("popup-add-cover-preview");
+      if (this.livreTemporaire.cover) {
+        coverElt.src = this.livreTemporaire.cover;
+        coverElt.style.display = "block";
+      } else {
+        coverElt.style.display = "none";
+      }
+
+      document.getElementById("popup-add-genre").textContent       = this.livreTemporaire.genre;
+      document.getElementById("popup-add-description").textContent = this.livreTemporaire.description;
+      
+      // Reset des champs
+      document.getElementById("popup-add-status").value = "À lire";
+      document.getElementById("popup-add-note").value   = "";
+      
+      // Appel de votre fonction magique pour griser les dates si besoin
+      if (typeof activerGestionDatesIntelligente === "function") {
+         document.getElementById("popup-add-end").value = ""; 
+         activerGestionDatesIntelligente("popup-add-");
+      }
+
+      document.getElementById("popup-add").style.display = "flex";
+    });
+
+    return div;
+  }
 
   // 1.b) Afficher / filtrer (statut) ← utilisé dans bibliotheque.php
   afficherLivresFiltres(statut) {
@@ -79,54 +207,9 @@ class BibliothequeManager {
     }
 
     toDisplay.forEach(livre => {
-      const div = document.createElement("div");
-      const fullDesc = livre.description || "Pas de résumé disponible.";
-      const maxChars = 500;
-      const shortDesc = (fullDesc.length > maxChars)
-    ? fullDesc.substring(0, maxChars).trim() + "…"
-    : fullDesc; 
-      
-      div.className = "grid-item";
-      div.innerHTML = `
-        <div class="cover-container">
-          <div class="cover-info-row">
-            <img
-              src="${livre.cover || ""}"
-              alt="Couverture"
-              onerror="this.style.display='none'"
-              class="book-cover"
-            >
-            <div class="title-author">
-              <p class="book-title">${livre.title}</p>
-              <p class="book-author">${livre.authors}</p>
-            </div>
-          </div>
-          <button class="delete-button">Supprimer</button>
-        </div>
-
-        <div class="book-details">
-          <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
-          <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
-          <p><strong class="label">Statut :</strong> ${livre.status}</p>
-          <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
-        </div>
-      `;
-
-      // 1) clic sur la carte pour ouvrir la popup d’édition (sauf quand on clique sur "Supprimer")
-      div.addEventListener("click", () => {
-        self.ouvrirPopupEdit(livre);
-      });
-
-      // 2) évènement du bouton 'Supprimer' (stopPropagation empêche l'ouverture de la popup)
-      const deleteBtn = div.querySelector(".delete-button");
-      deleteBtn.addEventListener("click", e => {
-        e.stopPropagation();
-        if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
-          self.supprimerLivre(livre);
-        }
-      });
-
-      container.appendChild(div);
+      // On appelle notre nouvelle méthode unique
+      const carte = this.creerCarteLivre(livre);
+      container.appendChild(carte);
     });
   }
 
@@ -180,52 +263,8 @@ class BibliothequeManager {
     // On vide le conteneur et on ré-affiche les livres triés
     container.innerHTML = "";
     sorted.forEach(livre => {
-      const div = document.createElement("div");
-      const fullDesc = livre.description || "Pas de résumé disponible.";
-      const maxChars = 500;
-      const shortDesc = (fullDesc.length > maxChars)
-    ? fullDesc.substring(0, maxChars).trim() + "…"
-    : fullDesc; 
-  
-      div.className = "grid-item";
-      div.innerHTML = `
-        <div class="cover-container">
-          <div class="cover-info-row">
-            <img
-              src="${livre.cover || ""}"
-              alt="Couverture"
-              onerror="this.style.display='none'"
-              class="book-cover"
-            >
-            <div class="title-author">
-              <p class="book-title">${livre.title}</p>
-              <p class="book-author">${livre.authors}</p>
-            </div>
-          </div>
-          <button class="delete-button">Supprimer</button>
-        </div>
-
-        <div class="book-details">
-          <p><strong class="label">Genre :</strong> ${livre.genre || 'N/A'}</p>
-          <p><strong class="label">Note :</strong> ${livre.note || "Non noté"}</p>
-          <p><strong class="label">Statut :</strong> ${livre.status}</p>
-          <p class="description-text">${shortDesc || "Pas de résumé disponible."}</p>
-        </div>
-      `;
-
-      div.addEventListener("click", () => {
-        self.ouvrirPopupEdit(livre);
-      });
-
-      const deleteBtn = div.querySelector(".delete-button");
-      deleteBtn.addEventListener("click", e => {
-        e.stopPropagation();
-        if (window.confirm("Voulez-vous vraiment supprimer ce livre ?")) {
-          self.supprimerLivre(livre);
-        }
-      });
-
-      container.appendChild(div);
+      const carte = this.creerCarteLivre(livre);
+      container.appendChild(carte);
     });
   }
 
@@ -234,7 +273,6 @@ class BibliothequeManager {
   ouvrirPopupEdit(livre) {
     this.livreEnCours = livre;
     
-    // CORRECTION : L'ID de la popup "edit" est différent sur bibliotheque.php
     // On doit gérer les deux cas.
     const popupId = document.getElementById("popup-edit") ? "popup-edit" : "edit-popup";
     const popupElt = document.getElementById(popupId);
@@ -273,6 +311,8 @@ class BibliothequeManager {
     if (endElt)    endElt.value    = livre.endDate || "";
 
     popupElt.style.display = "flex";
+
+    activerGestionDatesIntelligente(idPrefix);
   }
 
 
@@ -286,6 +326,8 @@ class BibliothequeManager {
     this.livreEnCours = null;
   }
 
+
+  
   // 1.f) Enregistrer les modifications d’un livre
   // CORRECTION : Fonction "async" pour attendre la réponse du serveur
   async enregistrerModifications() {
@@ -493,6 +535,68 @@ document.addEventListener("DOMContentLoaded", async () => {
   initialiserBoutonsMenu(manager);
 });
 
+
+
+async function chargerSuggestions(manager) {
+  const resultDiv = document.getElementById("result");
+  // On ne lance la suggestion que si la zone de résultat est vide (au chargement)
+  if (!resultDiv || resultDiv.innerHTML.trim() !== "") return;
+
+  // 1. Trouver les livres aimés (Terminé + Note >= 4)
+  const favoris = manager.livres.filter(l => l.status === "Terminé" && l.note >= 4);
+
+  if (favoris.length === 0) {
+    resultDiv.innerHTML = `<p style="text-align:center; color:var(--gray-500); margin-top:2rem;">
+      <em>Notez vos lectures terminées (4 ou 5 étoiles) pour voir apparaître ici des suggestions personnalisées !</em>
+    </p>`;
+    return;
+  }
+
+  // 2. En choisir un au hasard
+  const livreInspirant = favoris[Math.floor(Math.random() * favoris.length)];
+  const auteurCible = livreInspirant.authors.split(",")[0].trim(); // On prend le 1er auteur
+
+  // 3. Afficher un message d'attente
+  resultDiv.innerHTML = `<p style="text-align:center; color:var(--gray-500);">Recherche de pépites similaires à <strong>${livreInspirant.title}</strong>...</p>`;
+
+  try {
+    // 4. Interroger Google Books par auteur
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=inauthor:"${encodeURIComponent(auteurCible)}"&langRestrict=fr&maxResults=4`);
+    const data = await res.json();
+
+    resultDiv.innerHTML = ""; // On vide le loader
+
+    if (data.items && data.items.length > 0) {
+      // Titre de la section
+      const titreSection = document.createElement("h2");
+      titreSection.style.cssText = "font-size:1.5rem; text-align:center; margin-bottom:1.5rem; color:var(--primary-600);";
+      titreSection.innerHTML = `Parce que vous avez aimé <span style="color:var(--gray-800)">${livreInspirant.title}</span>`;
+      resultDiv.appendChild(titreSection);
+
+      // Afficher les livres
+      data.items.forEach(item => {
+        // Éviter de proposer le livre qu'on a déjà lu
+        const titreTrouve = (item.volumeInfo.title || "").toLowerCase();
+        const dejaLu = manager.livres.some(l => l.title.toLowerCase() === titreTrouve);
+
+        if (!dejaLu) {
+          const carte = manager.creerCarteGoogle(item); // On utilise la nouvelle méthode helper
+          resultDiv.appendChild(carte);
+        }
+      });
+      
+      if (resultDiv.childElementCount <= 1) {
+          resultDiv.innerHTML += "<p style='text-align:center'>Pas d'autres suggestions trouvées pour cet auteur.</p>";
+      }
+    } else {
+      resultDiv.innerHTML = "<p style='text-align:center'>Pas de suggestions trouvées pour le moment.</p>";
+    }
+  } catch (e) {
+    console.error("Erreur suggestions", e);
+    resultDiv.innerHTML = "";
+  }
+}
+
 // ---------------------------------
 // FONCTION HELPER pour la popup "Edit"
 // (car elle est sur index.php ET bibliotheque.php)
@@ -592,6 +696,8 @@ function initialiserRecherche(manager) {
   const resultDiv  = document.getElementById("result");
   if (!searchForm) return; // S'arrêter si on n'est pas sur la bonne page
 
+  chargerSuggestions(manager);
+
   // 3.a) Soumettre le formulaire → requête Google Books
   searchForm.addEventListener("submit", event => {
     event.preventDefault();
@@ -610,6 +716,12 @@ function initialiserRecherche(manager) {
           resultDiv.innerHTML = "<p>Aucun livre trouvé en français. Essayez un autre titre.</p>";
           return;
         }
+
+        data.items.forEach(item => {
+          const carte = manager.creerCarteGoogle(item);
+          resultDiv.appendChild(carte);
+        });
+
         data.items.forEach(item => {
           const book = item.volumeInfo;
           const bookDiv = document.createElement("div");
@@ -665,7 +777,7 @@ function initialiserRecherche(manager) {
             document.getElementById("popup-add-note").value   = "";
             document.getElementById("popup-add-start").value  = "";
             document.getElementById("popup-add-end").value    = "";
-
+            activerGestionDatesIntelligente("popup-add-")
             document.getElementById("popup-add").style.display = "flex";
           });
         });
@@ -767,43 +879,51 @@ function initialiserBibliotheque(manager) {
   });
   
   // 4.d) Exporter CSV
-  const exportBtn = document.getElementById("export-csv");
-  if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-      const livres = manager.livres; // Exporter la liste complète
-      if (livres.length === 0) {
-        afficherMessage("Aucun livre à exporter.");
-        return;
-      }
-      const header = ["Titre", "Auteur(s)", "Statut", "Note", "Début", "Fin", "Genre", "Résumé"];
-      const rows = livres.map(l => [
-        l.title,
-        l.authors,
-        l.status,
-        l.note || "",
-        l.startDate || "",
-        l.endDate || "",
-        l.genre || "",
-        (l.description || "").replace(/"/g, '""')
-      ].map(val => `"${val}"`).join(","));
-      const csvContent = [header.join(","), ...rows].join("\n");
-      const blob       = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url        = URL.createObjectURL(blob);
-      const link       = document.createElement("a");
-      link.href  = url;
-      link.download = "ma_bibliotheque.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    });
-  }
+  // 4.d) Exporter CSV (Gère le bouton du menu ET celui de la page)
+  const exportBtns = [document.getElementById("export-csv"), document.getElementById("page-export-csv")];
+  
+  exportBtns.forEach(btn => {
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const livres = manager.livres;
+        if (livres.length === 0) {
+          afficherMessage("Aucun livre à exporter.", "info");
+          return;
+        }
+        // ... (Le reste du code d'export CSV reste identique : const header = ... etc) ...
+        const header = ["Titre", "Auteur(s)", "Statut", "Note", "Début", "Fin", "Genre", "Résumé"];
+        const rows = livres.map(l => [
+            l.title, l.authors, l.status, l.note || "", l.startDate || "", l.endDate || "", l.genre || "", (l.description || "").replace(/"/g, '""')
+        ].map(val => `"${val}"`).join(","));
+        
+        const csvContent = [header.join(","), ...rows].join("\n");
+        const blob       = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url        = URL.createObjectURL(blob);
+        const link       = document.createElement("a");
+        link.href  = url;
+        link.download = "ma_bibliotheque.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      });
+    }
+  });
 
   // 4.e) Importer CSV
-  const importBtn     = document.getElementById("import-csv");
-  const importTrigger = document.getElementById("import-trigger");
-  if (importTrigger) {
-    importTrigger.addEventListener("click", () => importBtn.click());
+  const triggerPage = document.getElementById("page-import-trigger");
+  const inputPage   = document.getElementById("page-import-csv");
+  
+  // Bouton de la page
+  if (triggerPage && inputPage) {
+    triggerPage.addEventListener("click", () => inputPage.click());
+    inputPage.addEventListener("change", (e) => gerrerImportCSV(e, manager)); // On sortira la logique dans une fonction
+  }
+  const triggerMenu = document.getElementById("import-trigger");
+  const inputMenu   = document.getElementById("import-csv");
+  if (triggerMenu && inputMenu) {
+    triggerMenu.addEventListener("click", () => inputMenu.click());
+    inputMenu.addEventListener("change", (e) => gerrerImportCSV(e, manager));
   }
   if (importBtn) {
     importBtn.addEventListener("change", async event => {
@@ -938,6 +1058,55 @@ function initialiserBibliotheque(manager) {
 
 
 
+// --- FONCTION POUR GRISER LES DATES SELON LE STATUT ---
+function activerGestionDatesIntelligente(idPrefix) {
+  const selectStatut = document.getElementById(`${idPrefix}status`);
+  const inputDebut   = document.getElementById(`${idPrefix}start`);
+  const inputFin     = document.getElementById(`${idPrefix}end`);
+
+  if (!selectStatut || !inputDebut || !inputFin) return;
+
+  const mettreAJour = () => {
+    const statut = selectStatut.value;
+
+    // 1. Reset : on active tout par défaut
+    inputDebut.disabled = false;
+    inputFin.disabled   = false;
+    inputDebut.parentElement.style.opacity = "1"; // Pour l'effet visuel
+    inputFin.parentElement.style.opacity   = "1";
+
+    // 2. Logique selon le statut
+    if (statut === "À lire") {
+      // Pas de dates pour "À lire"
+      inputDebut.disabled = true;
+      inputFin.disabled   = true;
+      inputDebut.value    = "";
+      inputFin.value      = "";
+      inputDebut.parentElement.style.opacity = "0.4";
+      inputFin.parentElement.style.opacity   = "0.4";
+      
+    } else if (statut === "En cours") {
+      // Pas de date de fin pour "En cours"
+      inputFin.disabled = true;
+      inputFin.value    = "";
+      inputFin.parentElement.style.opacity = "0.4";
+      
+    } else if (statut === "DNF") {
+      // DNF : on garde le début, mais souvent pas de "fin de lecture" (selon votre logique précédente)
+      inputFin.disabled = true;
+      inputFin.value    = "";
+      inputFin.parentElement.style.opacity = "0.4";
+    }
+    // "Terminé" : tout reste activé
+  };
+
+  // Écouter le changement
+  selectStatut.addEventListener("change", mettreAJour);
+  
+  // Lancer une fois au démarrage pour appliquer l'état initial
+  mettreAJour();
+}
+
 // ─── 5) UTILITAIRE “ENRICHIR VIA GOOGLE BOOKS” ─────────────────────────────────
 async function enrichirLivreViaAPI(titre, auteur) {
   try {
@@ -1022,6 +1191,194 @@ function afficherDernieresLectures(manager) {
   });
 }
 
+// Fonction intelligente pour traiter l'import (Compatible Goodreads & Format Perso)
+// Fonction d'import avec barre de progression animée
+async function gerrerImportCSV(event, manager) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 1. Création dynamique de la popup de progression
+    const loaderId = "import-loader-popup";
+    let loaderPopup = document.getElementById(loaderId);
+    
+    if (!loaderPopup) {
+        loaderPopup = document.createElement("div");
+        loaderPopup.id = loaderId;
+        loaderPopup.className = "popup"; // On garde votre style de base (fond flouté)
+        loaderPopup.style.display = "flex"; // Flex pour centrer
+        loaderPopup.style.zIndex = "2000";  // Au-dessus de tout
+        loaderPopup.innerHTML = `
+            <div class="popup-content loader-container">
+                <h3 class="loader-title">Importation en cours...</h3>
+                <div class="loader-bar-bg">
+                    <div id="loader-fill" class="loader-bar-fill"></div>
+                </div>
+                <div id="loader-status" class="loader-text">Analyse du fichier...</div>
+                <div id="loader-book" class="loader-details"></div>
+            </div>
+        `;
+        document.body.appendChild(loaderPopup);
+    } else {
+        loaderPopup.style.display = "flex";
+    }
+
+    // Références aux éléments à mettre à jour
+    const fillEl   = document.getElementById("loader-fill");
+    const statusEl = document.getElementById("loader-status");
+    const bookEl   = document.getElementById("loader-book");
+
+    // Reset visuel
+    fillEl.style.width = "0%";
+    statusEl.textContent = "Lecture du fichier...";
+    bookEl.textContent = "";
+
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const text  = new TextDecoder("utf-8").decode(e.target.result).normalize("NFC");
+        const lines = text.trim().split(/\r\n|\n|\r/); // Découpage robuste
+
+        if (lines.length <= 1) {
+          loaderPopup.style.display = "none";
+          afficherMessage("Fichier CSV vide ou invalide.", "erreur");
+          return;
+        }
+
+        // Analyse entêtes
+        const headersLine = lines.shift();
+        const headers = parseCSVLine(headersLine).map(h => h.toLowerCase().trim());
+        const isGoodreads = headers.includes("book id") && headers.includes("author");
+        
+        const totalLivres = lines.length;
+        let livresTraites = 0;
+        let nouveauxAjoutes = 0;
+        let livresActuels = manager.livres;
+
+        // Boucle sur chaque ligne
+        for (const line of lines) {
+            livresTraites++;
+            
+            // --- MISE À JOUR DE LA PROGRESSION ---
+            const pourcentage = Math.round((livresTraites / totalLivres) * 100);
+            fillEl.style.width = `${pourcentage}%`;
+            statusEl.textContent = `Traitement : ${livresTraites} sur ${totalLivres}`;
+            
+            // --- LOGIQUE D'IMPORT (Identique à avant) ---
+            const cols = parseCSVLine(line);
+            if (cols.length < 3) continue;
+
+            let titre, auteurs, statut, note, debut, fin, genre, resume;
+
+            if (isGoodreads) {
+                const idxTitle  = headers.indexOf("title");
+                const idxAuthor = headers.indexOf("author");
+                const idxRating = headers.indexOf("my rating");
+                const idxReadAt = headers.indexOf("date read");
+                const idxAdded  = headers.indexOf("date added");
+                const idxShelf  = headers.indexOf("exclusive shelf");
+
+                titre   = cols[idxTitle];
+                auteurs = cols[idxAuthor];
+                note    = parseInt(cols[idxRating]) || 0;
+                
+                const shelf = cols[idxShelf];
+                if (shelf === "read") statut = "Terminé";
+                else if (shelf === "currently-reading") statut = "En cours";
+                else statut = "À lire";
+
+                const formatDate = (d) => d ? d.replace(/\//g, "-") : "";
+                fin   = formatDate(cols[idxReadAt]);
+                debut = (statut === "En cours" || statut === "Terminé") ? formatDate(cols[idxAdded]) : "";
+                
+                genre = "Inconnu";
+                resume = "";
+            } else {
+                [titre, auteurs, statut, note, debut, fin, genre, resume] = cols;
+            }
+            
+            if (!titre || !auteurs) continue;
+
+            // Afficher le titre du livre en cours pour l'effet "ça bosse"
+            bookEl.textContent = titre;
+
+            // Vérification doublon
+            const existe = livresActuels.some(l =>
+              l.title.toLowerCase() === titre.toLowerCase() &&
+              l.authors.toLowerCase() === auteurs.toLowerCase()
+            );
+
+            if (!existe) {
+                // Appel API (C'est ça qui prend du temps)
+                const enrichi = await enrichirLivreViaAPI(titre, auteurs);
+                
+                const newBook = {
+                  title:       titre,
+                  authors:     auteurs,
+                  status:      statut || "À lire",
+                  note:        parseFloat(note) || 0,
+                  startDate:   debut || "",
+                  endDate:     fin || "",
+                  genre:       enrichi.genre || genre || "Inconnu",
+                  description: enrichi.description || resume || "Pas de résumé disponible.",
+                  cover:       enrichi.cover || ""
+                };
+
+                const ok = await manager.ajouterLivre(newBook);
+                if (ok) nouveauxAjoutes++;
+            }
+            
+            // Petite pause pour laisser le temps au navigateur de rafraîchir l'UI
+            // (sinon la boucle bloque tout et on ne voit pas l'anim)
+            
+        }
+
+        await new Promise(r => setTimeout(r, 10)); 
+
+        // FIN
+        loaderPopup.style.display = "none";
+        
+        if (nouveauxAjoutes > 0) {
+            afficherMessage(`Import terminé ! ${nouveauxAjoutes} livres ajoutés.`, "succes");
+            await manager.chargerLivres();
+             // Rafraichir le tri si on est sur la page bibliothèque
+            const selectTri = document.getElementById("tri-critere");
+            if(selectTri) manager.trierLivres(selectTri.value);
+        } else {
+            afficherMessage("Import terminé. Aucun nouveau livre (tous existent déjà).", "info");
+        }
+
+      } catch (err) {
+        console.error("Erreur import CSV :", err);
+        loaderPopup.style.display = "none";
+        afficherMessage("Erreur lors de l’importation.", "erreur");
+      } finally {
+        event.target.value = null;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Helper indispensable pour bien lire les CSV avec des virgules dans les titres (ex: "Moyes, Jojo")
+function parseCSVLine(text) {
+    const result = [];
+    let cell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+            cell = '';
+        } else {
+            cell += char;
+        }
+    }
+    // Pousser la dernière cellule
+    result.push(cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+    return result;
+}
 
 //
 // ─── 6) FONCTIONS DU TABLEAU DE BORD (INDEX.PHP) ───────────────────────────────────

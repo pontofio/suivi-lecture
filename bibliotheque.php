@@ -43,10 +43,10 @@ if (!isset($_SESSION['utilisateur_id'])) {
     </div>
 
     <div id="bibli-actions">
-      <input type="file" id="import-csv" accept=".csv" style="display: none;">
-      <button id="import-trigger">Importer CSV</button>
-      <button id="export-csv">Exporter CSV</button>
-      <button id="enrichir-fiches">Compléter les fiches</button>
+      <input type="file" id="page-import-csv" accept=".csv" style="display: none;">
+      <button id="page-import-trigger">Importer CSV</button>
+      <button id="page-export-csv">Exporter CSV</button>
+      <button id="page-enrichir-fiches">Compléter les fiches</button>
     </div>
 
     <div id="library"></div>
