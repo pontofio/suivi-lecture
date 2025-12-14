@@ -39,8 +39,8 @@ class BibliothequeManager {
           authors:     item.authors,
           status:      item.statut,
           note:        parseFloat(item.note) || 0,
-          startDate:   item.date_debut,
-          endDate:     item.date_fin,
+          startDate:   item.startDate, 
+          endDate:     item.endDate,
           genre:       item.genre,
           description: item.description,
           cover: item.cover || ""
@@ -301,19 +301,19 @@ class BibliothequeManager {
 
     // CONTRAINTES MÉTIER
     if (statut === "À lire" && (startDate || endDate)) {
-      alert("Un livre 'À lire' ne doit pas avoir de date de début ou de fin.");
+      afficherMessage("Un livre 'À lire' ne doit pas avoir de date de début ou de fin.");
       return;
     }
     if (statut === "En cours" && endDate) {
-      alert("Un livre 'En cours' ne doit pas avoir de date de fin.");
+      afficherMessage("Un livre 'En cours' ne doit pas avoir de date de fin.");
       return;
     }
-    if (statut === "Terminé" && (!startDate || !endDate)) {
-      alert("Un livre 'Terminé' doit avoir une date de début et une date de fin.");
+    if (statut === "Terminé" &&  !endDate) {
+      afficherMessage("Un livre 'Terminé' doit avoir une date de fin.");
       return;
     }
     if (statut === "DNF" && endDate) {
-      alert("Un livre 'DNF' ne doit pas avoir de date de fin.");
+      afficherMessage("Un livre 'DNF' ne doit pas avoir de date de fin.");
       return;
     }
 
@@ -336,7 +336,7 @@ class BibliothequeManager {
       // Si le serveur dit non, on alerte et on s'arrête
       if (!data.success) {
         console.warn("Erreur sur le serveur :", data.message);
-        alert("Erreur serveur : " + data.message);
+        afficherMessage("Erreur serveur : " + data.message);
         return; 
       }
 
@@ -370,7 +370,7 @@ class BibliothequeManager {
 
     } catch (err) {
       console.error("Erreur communication serveur :", err);
-      alert("Impossible de contacter le serveur. Vos modifications n'ont pas été enregistrées.");
+      afficherMessage("Impossible de contacter le serveur. Vos modifications n'ont pas été enregistrées.");
     }
   }
 
@@ -415,7 +415,7 @@ class BibliothequeManager {
 
       if (!data.success) {
         console.warn("Erreur suppression serveur :", data.message);
-        alert("Le livre n'a pas pu être supprimé.");
+        afficherMessage("Le livre n'a pas pu être supprimé.");
         return;
       }
 
@@ -425,7 +425,7 @@ class BibliothequeManager {
 
     } catch (err) {
       console.error("Erreur réseau suppression :", err);
-      alert("Erreur de connexion lors de la suppression.");
+      afficherMessage("Erreur de connexion lors de la suppression.");
     }
 
     // 3) Réafficher la liste mise à jour (en tenant compte du filtre actuel)
@@ -447,11 +447,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let menuLoadPromise = Promise.resolve();
   const menuPlaceholder = document.getElementById("menu-placeholder");
   if (menuPlaceholder) {
-<<<<<<< HEAD:assets/js/script.js
     fetch("includes/menu.html")
-=======
-    menuLoadPromise = fetch("menu.html")
->>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87:script.js
       .then(r => r.ok ? r.text() : Promise.reject("menu.html introuvable"))
       .then(html => {
         menuPlaceholder.innerHTML = html;
@@ -531,6 +527,64 @@ function initialiserPopupEdition(manager) {
     }
 }
 
+// --- FONCTION UTILITAIRE POUR REMPLACER ALERT() ---
+function afficherMessage(message, type = "info") {
+  // 1. Vérifier si la popup existe déjà dans le DOM
+  let popup = document.getElementById("custom-message-popup");
+
+  // 2. Si non, on la crée dynamiquement
+  if (!popup) {
+    const div = document.createElement("div");
+    div.id = "custom-message-popup";
+    div.className = "popup"; // On réutilise votre classe CSS existante
+    div.style.display = "none";
+    div.innerHTML = `
+      <div class="popup-content" style="max-width: 400px; text-align: center; padding: 30px;">
+        <span class="close-button" id="msg-close" style="position: absolute; top: 10px; right: 10px;">&times;</span>
+        <h2 id="msg-title" style="margin-top: 0; font-family: 'Playfair Display', serif;"></h2>
+        <p id="msg-text" style="font-size: 1rem; color: var(--gray-700); margin: 20px 0; line-height: 1.5;"></p>
+        <button id="msg-ok" style="margin: 0 auto;">Compris</button>
+      </div>
+    `;
+    document.body.appendChild(div);
+    popup = div;
+
+    // Gestion des événements de fermeture
+    const closeBtn = popup.querySelector("#msg-close");
+    const okBtn = popup.querySelector("#msg-ok");
+    const fermer = () => popup.style.display = "none";
+
+    closeBtn.addEventListener("click", fermer);
+    okBtn.addEventListener("click", fermer);
+    popup.addEventListener("click", (e) => {
+      if (e.target === popup) fermer();
+    });
+  }
+
+  // 3. Configurer le contenu selon le type (erreur, succès, info)
+  const titleEl = popup.querySelector("#msg-title");
+  const textEl = popup.querySelector("#msg-text");
+  const btnEl = popup.querySelector("#msg-ok");
+
+  textEl.textContent = message;
+
+  if (type === "erreur") {
+    titleEl.textContent = "Attention";
+    titleEl.style.color = "var(--error-500)";
+    btnEl.style.background = "linear-gradient(135deg, var(--error-500), #dc2626)";
+  } else if (type === "succes") {
+    titleEl.textContent = "Succès !";
+    titleEl.style.color = "var(--success-500)";
+    btnEl.style.background = "linear-gradient(135deg, var(--success-500), #059669)";
+  } else {
+    titleEl.textContent = "Information";
+    titleEl.style.color = "var(--primary-600)";
+    btnEl.style.background = "linear-gradient(135deg, var(--primary-600), var(--primary-500))";
+  }
+
+  // 4. Afficher la popup
+  popup.style.display = "flex";
+}
 
 // ─── 3) LOGIQUE « RECHERCHE + POPUP ADD » (pour recherche.php) ──────────────────
 function initialiserRecherche(manager) {
@@ -543,7 +597,7 @@ function initialiserRecherche(manager) {
     event.preventDefault();
     const query = document.getElementById("search-input").value.trim();
     if (!query) {
-      alert("Veuillez saisir un titre ou un auteur.");
+      afficherMessage("Veuillez saisir un titre ou un auteur.");
       return;
     }
 
@@ -640,7 +694,7 @@ function initialiserRecherche(manager) {
   // Gérer la validation
   popupAddSave.addEventListener("click", async () => {
     if (!manager.livreTemporaire) {
-      alert("Aucun livre chargé !");
+      afficherMessage("Aucun livre chargé !");
       return;
     }
     const statut    = document.getElementById("popup-add-status").value;
@@ -650,19 +704,19 @@ function initialiserRecherche(manager) {
 
     // Validations métier :
     if (statut === "À lire" && (startDate || endDate)) {
-      alert("Un livre 'À lire' ne doit pas avoir de date.");
+      afficherMessage("Un livre 'À lire' ne doit pas avoir de date.");
       return;
     }
     if (statut === "En cours" && endDate) {
-      alert("Un livre 'En cours' ne doit pas avoir de date de fin.");
+      afficherMessage("Un livre 'En cours' ne doit pas avoir de date de fin.");
       return;
     }
-    if (statut === "Terminé" && (!startDate || !endDate)) {
-      alert("Un livre 'Terminé' doit avoir date de début et de fin.");
+    if (statut === "Terminé" && !endDate) {
+      afficherMessage("Un livre 'Terminé' doit avoir une date et de fin.");
       return;
     }
     if (statut === "DNF" && endDate) {
-      alert("Un livre 'DNF' ne doit pas avoir de date de fin.");
+      afficherMessage("Un livre 'DNF' ne doit pas avoir de date de fin.");
       return;
     }
 
@@ -681,11 +735,11 @@ function initialiserRecherche(manager) {
 
     const success = await manager.ajouterLivre(livreFinal);
     if (success) {
-      alert("Livre ajouté avec succès !");
+      afficherMessage("Livre ajouté avec succès !");
       closeAddPopup();
       manager.chargerLivres(); // Recharger la liste pour la synchro
     } else {
-      alert("Erreur lors de l’ajout du livre (verifier la console).");
+      afficherMessage("Erreur lors de l’ajout du livre (verifier la console).");
     }
   });
 }
@@ -718,7 +772,7 @@ function initialiserBibliotheque(manager) {
     exportBtn.addEventListener("click", () => {
       const livres = manager.livres; // Exporter la liste complète
       if (livres.length === 0) {
-        alert("Aucun livre à exporter.");
+        afficherMessage("Aucun livre à exporter.");
         return;
       }
       const header = ["Titre", "Auteur(s)", "Statut", "Note", "Début", "Fin", "Genre", "Résumé"];
@@ -755,7 +809,7 @@ function initialiserBibliotheque(manager) {
     importBtn.addEventListener("change", async event => {
       const file = event.target.files[0];
       if (!file) {
-        alert("Aucun fichier sélectionné.");
+        afficherMessage("Aucun fichier sélectionné.");
         return;
       }
       const reader = new FileReader();
@@ -766,14 +820,14 @@ function initialiserBibliotheque(manager) {
                           .normalize("NFC");
           const lines = text.trim().split("\n").map(l => l.replace(/\r/g, "").trim());
           if (lines.length <= 1) {
-            alert("Fichier CSV vide ou invalide.");
+            afficherMessage("Fichier CSV vide ou invalide.");
             return;
           }
           const headers = lines.shift()
                                 .split(",")
                                 .map(h => h.replace(/"/g, "").trim());
           if (headers.length < 8) {
-            alert("CSV invalide : entêtes manquantes.");
+            afficherMessage("CSV invalide : entêtes manquantes.");
             return;
           }
           
@@ -813,14 +867,14 @@ function initialiserBibliotheque(manager) {
             }
           }
 
-          alert(`${nouveauxAjoutes} nouveau(x) livre(s) ajouté(s).`);
+          afficherMessage(`${nouveauxAjoutes} nouveau(x) livre(s) ajouté(s).`);
           // Recharger tout pour être synchro
           await manager.chargerLivres();
           manager.trierLivres(selectTri.value); // Ré-appliquer le tri
 
         } catch (err) {
           console.error("Erreur import CSV :", err);
-          alert("Erreur lors de l’importation (voir console).");
+          afficherMessage("Erreur lors de l’importation (voir console).");
         } finally {
           // Réinitialiser le champ pour pouvoir importer le même fichier 2x
           event.target.value = null;
@@ -877,7 +931,7 @@ function initialiserBibliotheque(manager) {
       
       enrichBtn.disabled = false;
       enrichBtn.textContent = "Compléter";
-      alert("Fiches complétées (si des données ont été trouvées).");
+      afficherMessage("Fiches complétées (si des données ont été trouvées).");
     });
   }
 }

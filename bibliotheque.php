@@ -11,11 +11,7 @@ if (!isset($_SESSION['utilisateur_id'])) {
 <head>
   <meta charset="UTF-8">
   <title>Ma Bibliothèque</title>
-<<<<<<< HEAD
   <link rel="stylesheet" href="assets/css/style.css">
-=======
-  <link rel="stylesheet" href="style.css?v=<?php echo filemtime('style.css'); ?>">
->>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87
 </head>
 <body>
   <div id="menu-placeholder"></div>
@@ -113,13 +109,9 @@ if (!isset($_SESSION['utilisateur_id'])) {
     </div>
   </div>
 
-<<<<<<< HEAD
 
 
   <!-- Un seul appel à script.js pour les deux pages -->
   <script src="assets/js/script.js"></script>
-=======
-  <script src="script.js?v=<?php echo filemtime('script.js'); ?>"></script>
->>>>>>> 29bdcc9a57fbb38324b803cded6216bd621ecb87
 </body>
 </html>

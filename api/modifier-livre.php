@@ -24,9 +24,6 @@ $livre_id = $data['livre_id'] ?? null;
 $statut = $data['statut'] ?? '';
 $utilisateur_id = $_SESSION['utilisateur_id'];
 
-// ==========================================================
-//    CORRECTION CRUCIALE : Convertir "" en NULL pour la BDD
-// ==========================================================
 
 // Pour la NOTE (INT ou NULL)
 $note_raw = $data['note'] ?? null;
