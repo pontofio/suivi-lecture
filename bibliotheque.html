@@ -6,22 +6,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav>
-    <a href="index.html">Accueil</a>
-    <a href="bibliotheque.html">Ma Bibliothèque</a>
-    <a href="recherche.html">Recherche</a>
-  </nav>
+ <div id="menu-placeholder"></div>
 
   <main>
     <h1>Ma Bibliothèque</h1>
     <div id="filtre-container">
     <label for="filtre-statut">Filtrer par statut :</label>
     <select id="filtre-statut">
-        <option value="Tous">Tous</option>
-        <option value="À lire">À lire</option>
-        <option value="En cours">En cours</option>
-        <option value="Terminé">Terminé</option>
-    </select>
+    <option value="Tous">Tous</option>
+    <option value="À lire">À lire</option>
+    <option value="En cours">En cours</option>
+    <option value="Terminé">Terminé</option>
+    <option value="Abandonné">Abandonné</option>
+</select>
     </div>
     <div id="bibli-actions">
         <button id="export-csv">Exporter en CSV</button>
@@ -37,7 +34,6 @@
     <div id="library"></div>
   </main>
 
-  <script src="script.js"></script>
 
   <div id="edit-popup" class="popup" style="display:none;">
   <div class="popup-content">
@@ -65,10 +61,11 @@
   <div class="edit-field">
     <label for="edit-status">Statut :</label>
     <select id="edit-status">
-      <option value="À lire">À lire</option>
-      <option value="En cours">En cours</option>
-      <option value="Terminé">Terminé</option>
-    </select>
+    <option value="À lire">À lire</option>
+    <option value="En cours">En cours</option>
+    <option value="Terminé">Terminé</option>
+    <option value="Abandonné">Abandonné</option>
+</select>
   </div>
 
   <div class="edit-field">
@@ -97,6 +94,8 @@
   </div>
 </div>
 </div>
+<script src="config.js"></script>
+  <script src="script.js"></script>
 
 </body>
 </html>

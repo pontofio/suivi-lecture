@@ -305,11 +305,36 @@ canvas {
 
 /* === PAGE BIBLIOTHEQUE === */
 /* Grille d'affichage des livres dans la bibliothèque */
-#library {
+#library,
+#pal-library {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  padding: 20px;
+  padding: 20px 0;
+  grid-template-columns: 1fr; /* 1 livre par ligne sur mobile */
+}
+
+/* Tablette portrait : 2 colonnes */
+@media (min-width: 600px) {
+  #library,
+  #pal-library {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Écran moyen / ordinateur portable : 3 colonnes */
+@media (min-width: 900px) {
+  #library,
+  #pal-library {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Grand écran : 4 colonnes maximum */
+@media (min-width: 1200px) {
+  #library,
+  #pal-library {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* Conteneur du filtre par statut */
@@ -682,4 +707,42 @@ canvas {
     width: 100px;
     height: 150px;
   }
+}
+
+#roulette-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+#roulette-container {
+  position: relative;
+  display: inline-block;
+  margin: 15px 0;
+}
+
+#fleche-roue {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  color: #7b4397;
+  z-index: 10;
+  pointer-events: none;
+}
+
+#wheel-canvas {
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.result-item {
+  cursor: pointer;
+}
+
+.result-item .add-button {
+  cursor: default;
 }

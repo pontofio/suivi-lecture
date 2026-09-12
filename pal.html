@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ma PAL - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <h1>Pile à Lire</h1>
+
+    <section id="roulette-section">
+      <h2>Tirer ma prochaine lecture</h2>
+      <div id="roulette-container">
+        <div id="fleche-roue">▼</div>
+        <canvas id="wheel-canvas" width="320" height="320"></canvas>
+      </div>
+      <button id="spin-btn">Tourner la roue</button>
+      <div id="pal-selection-message"></div>
+    </section>
+
+    <section>
+      <h2>Mes livres à lire (<span id="pal-count">0</span>)</h2>
+      <div id="pal-library" class="grid-container"></div>
+    </section>
+  </main>
+
+  <div id="confirm-pal-modal" class="popup" style="display: none;">
+    <div class="popup-content" style="max-width: 450px; text-align: center;">
+      <h3>Lancer cette lecture ?</h3>
+      <p id="modal-livre-titre" style="font-weight: bold; margin: 15px 0;"></p>
+      <p>Passer ce livre au statut "En cours" dès aujourd'hui ?</p>
+      <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+        <button id="btn-valider-lecture">Valider</button>
+        <button id="btn-annuler-lecture" style="background-color: #eee;">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+<div id="edit-popup" class="popup" style="display:none;">
+    <div class="popup-content">
+      <span class="close-button" id="edit-close">&times;</span>
+      <h2>Modifier le livre</h2>
+      <div class="edit-block">
+        <p id="edit-title" class="edit-title"></p>
+        <p id="edit-authors" class="edit-authors"></p>
+      </div>
+      <div class="edit-block">
+        <label>Genre :</label>
+        <p id="edit-genre-text" class="edit-genre-text"></p>
+      </div>
+      <div class="edit-block">
+        <label>Résumé :</label>
+        <div id="edit-desc-text" class="edit-description"></div>
+      </div>
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-status">Statut :</label>
+          <select id="edit-status">
+            <option value="À lire">À lire</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Abandonné">Abandonné</option>
+          </select>
+        </div>
+        <div class="edit-field">
+          <label for="edit-note">Note (sur 5) :</label>
+          <input type="number" id="edit-note" min="1" max="5">
+        </div>
+      </div>
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-start">Début :</label>
+          <input type="date" id="edit-start">
+        </div>
+        <div class="edit-field">
+          <label for="edit-end">Fin :</label>
+          <input type="date" id="edit-end">
+        </div>
+      </div>
+      <div class="edit-buttons">
+        <button id="edit-save">Enregistrer</button>
+        <button id="edit-cancel">Annuler</button>
+      </div>
+    </div>
+  </div>
+<script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

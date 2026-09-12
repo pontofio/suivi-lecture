@@ -4,52 +4,73 @@
   <meta charset="UTF-8">
   <title>Recherche de livres</title>
   <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
 </head>
 <body>
-  <nav>
-    <a href="index.html">Accueil</a>
-    <a href="bibliotheque.html">Ma Bibliothèque</a>
-    <a href="recherche.html">Recherche</a>
-  </nav>
+ <div id="menu-placeholder"></div>
 
   <main>
     <h1>Rechercher un livre</h1>
-    <form id="search-form">
-      <input type="text" id="search-input" placeholder="Tape un titre ou un auteur..." required>
+        <form id="search-form" onsubmit="return false;">
+        <input type="text" id="search-input" placeholder="Tape un titre ou un auteur..." required>
       <button type="submit">Rechercher</button>
     </form>
     <div id="result"></div>
   </main>
 
-  <!-- Popup pour compléter les infos du livre -->
-  <div id="popup" class="popup" style="display:none;">
+  <!-- Popup 1 : Informations détaillées du livre -->
+  <div id="info-popup" class="popup" style="display:none;">
     <div class="popup-content">
-        <span class="close-button" id="popup-close">&times;</span>
+      <span class="close-button" id="info-close">&times;</span>
+      <h2 id="info-title" style="margin-top: 0;"></h2>
+      <p id="info-authors" style="font-weight: bold; color: #666; margin-top: -5px;"></p>
+      <p><strong>Genre :</strong> <span id="info-genre"></span></p>
+      <p><strong>Date de parution :</strong> <span id="info-date"></span></p>
+      <p><strong>Résumé :</strong></p>
+      <div id="info-description" style="max-height: 220px; overflow-y: auto; line-height: 1.5; color: #444; padding-right: 5px;"></div>
+      <div style="margin-top: 20px; text-align: right;">
+        <button id="info-add-btn">Ajouter à la bibliothèque</button>
+      </div>
+    </div>
+  </div>
 
-      <h2>Ajouter à ma bibliothèque</h2>
-      <label for="popup-status">Statut de lecture :</label>
-      <select id="popup-status">
+  <!-- Popup 2 : Choix du statut et champs conditionnels -->
+  <div id="add-popup" class="popup" style="display:none;">
+    <div class="popup-content" style="max-width: 400px;">
+      <span class="close-button" id="add-close">&times;</span>
+      <h3 style="margin-top: 0;">Ajouter à ma bibliothèque</h3>
+      <p id="add-book-title" style="font-weight: bold; margin-bottom: 15px; color: #555;"></p>
+
+      <label for="add-status">Statut de lecture :</label>
+      <select id="add-status">
         <option value="À lire">À lire</option>
         <option value="En cours">En cours</option>
         <option value="Terminé">Terminé</option>
+        <option value="Abandonné">Abandonné</option>
       </select>
-      <p><strong>Genre :</strong> <span id="popup-genre"></span></p>
-        <p><strong>Résumé :</strong></p>
-        <div id="popup-description" style="max-height: 100px; overflow-y: auto;"></div>
 
-      <label for="popup-note">Note (sur 5) :</label>
-      <input type="number" id="popup-note" min="1" max="5" step="1">
+      <div id="field-start" style="display: none; margin-top: 12px;">
+        <label for="add-start">Date de début :</label>
+        <input type="date" id="add-start">
+      </div>
 
-      <label for="popup-start">Début de lecture :</label>
-      <input type="date" id="popup-start">
+      <div id="field-end" style="display: none; margin-top: 12px;">
+        <label for="add-end">Date de fin :</label>
+        <input type="date" id="add-end">
+      </div>
 
-      <label for="popup-end">Fin de lecture :</label>
-      <input type="date" id="popup-end">
+      <div id="field-note" style="display: none; margin-top: 12px;">
+        <label for="add-note">Note (sur 5) :</label>
+        <input type="number" id="add-note" min="1" max="5" step="1">
+      </div>
 
-      <button id="popup-save">Valider</button>
-      <button id="popup-cancel">Annuler</button>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="add-cancel" style="background-color: #eee; color: #444;">Annuler</button>
+        <button id="add-save">Valider</button>
+      </div>
     </div>
   </div>
+    <script src="config.js"></script>
+    <script src="script.js" ></script>
+
 </body>
 </html>
