@@ -2,101 +2,127 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Ma Bibliothèque</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma Bibliothèque - Suivi de lectures</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
- <div id="menu-placeholder"></div>
+  <div id="menu-placeholder"></div>
 
-  <main>
+  <main class="container">
     <h1>Ma Bibliothèque</h1>
+    
     <div id="filtre-container">
-    <label for="filtre-statut">Filtrer par statut :</label>
-    <select id="filtre-statut">
-    <option value="Tous">Tous</option>
-    <option value="À lire">À lire</option>
-    <option value="En cours">En cours</option>
-    <option value="Terminé">Terminé</option>
-    <option value="Abandonné">Abandonné</option>
-</select>
-    </div>
-    <div id="bibli-actions">
-        <button id="export-csv">Exporter en CSV</button>
-        <label for="import-csv" class="custom-file-upload">Importer un CSV</label>
-        <input type="file" id="import-csv" accept=".csv" style="display:none;">
-        <button id="enrichir-fiches">Compléter les fiches</button>
-        <div id="chargement-enrichissement" style="display: none; margin-top: 10px;">
-            <p>🔄 Enrichissement des livres en cours...</p>
+      <div class="filtres-bar">
+        <div class="filtre-groupe">
+          <label for="filtre-statut">Statut :</label>
+          <select id="filtre-statut">
+            <option value="Tous">Tous</option>
+            <option value="À lire">À lire</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Abandonné">Abandonné</option>
+          </select>
         </div>
+        <div class="filtre-groupe">
+          <input type="text" id="filtre-texte" placeholder="Rechercher par titre ou auteur..." />
+        </div>
+      </div>
+    </div>
 
+    <div id="bibli-actions">
+      <button id="export-csv">Exporter en CSV</button>
+      <label for="import-csv" class="custom-file-upload">Importer un CSV</label>
+      <input type="file" id="import-csv" accept=".csv" style="display:none;">
+      <button id="enrichir-fiches">Compléter les fiches</button>
+    </div>
+
+    <div id="chargement-enrichissement" style="display: none;">
+      <p id="enrichissement-texte">🔄 Enrichissement des livres en cours...</p>
+      <button id="enrichir-stop" class="btn-secondary" style="font-size: 0.85rem; padding: 5px 12px;">Arrêter</button>
     </div>
 
     <div id="library"></div>
   </main>
 
-
   <div id="edit-popup" class="popup" style="display:none;">
-  <div class="popup-content">
-    <span class="close-button" id="edit-close">&times;</span>
+    <div class="popup-content">
+      <span class="close-button" id="edit-close">&times;</span>
 
-    <h2>Modifier le livre</h2>
+      <h2>Modifier le livre</h2>
 
-    <div class="edit-block">
-      <p id="edit-title" class="edit-title"></p>
-      <p id="edit-authors" class="edit-authors"></p>
+      <div class="edit-header-details">
+        <img id="edit-cover-preview" class="popup-cover" src="" alt="Couverture">
+        <div class="edit-block edit-meta">
+          <h3 id="edit-title" class="edit-title"></h3>
+          <p id="edit-authors" class="edit-authors"></p>
+          <p><strong>Genre :</strong> <span id="edit-genre-text" class="edit-genre-text"></span></p>
+        </div>
+      </div>
+
+      <div class="edit-block">
+        <label>Résumé :</label>
+        <div id="edit-desc-text" class="edit-description"></div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-status">Statut :</label>
+          <select id="edit-status">
+            <option value="À lire">À lire</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Abandonné">Abandonné</option>
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label for="edit-note">Note (sur 5) :</label>
+          <input type="number" id="edit-note" min="1" max="5" step="1" placeholder="Note de 1 à 5">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-start">Date de début :</label>
+          <input type="date" id="edit-start">
+        </div>
+
+        <div class="edit-field">
+          <label for="edit-end">Date de fin :</label>
+          <input type="date" id="edit-end">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-saga">Saga associée :</label>
+          <select id="edit-saga">
+            <option value="">-- Aucune saga --</option>
+            <option value="__NEW__">➕ Créer une nouvelle saga...</option>
+          </select>
+        </div>
+
+        <div class="edit-field" id="edit-field-saga-tome" style="display: none;">
+          <label for="edit-saga-tome">Numéro de tome :</label>
+          <input type="number" id="edit-saga-tome" min="1" placeholder="Ex: 1, 2, 3...">
+        </div>
+      </div>
+
+      <div class="edit-field" id="edit-field-new-saga" style="display: none; margin-bottom: 12px;">
+        <label for="edit-new-saga-title">Nom de la nouvelle saga :</label>
+        <input type="text" id="edit-new-saga-title" placeholder="Ex: Harry Potter, Dune...">
+      </div>
+
+      <div class="edit-buttons">
+        <button id="edit-delete" class="delete-button" style="margin-right: auto;">Supprimer ce livre</button>
+        <button id="edit-cancel" class="btn-secondary">Annuler</button>
+        <button id="edit-save">Enregistrer</button>
+      </div>
     </div>
-
-    <div class="edit-block">
-        <label>Genre :</label>
-        <p id="edit-genre-text" class="edit-genre-text"></p>
-    </div>
-
-
-    <div class="edit-block">
-      <label>Résumé :</label>
-      <div id="edit-desc-text" class="edit-description"></div>
-    </div>
-
-    <div class="edit-line">
-  <div class="edit-field">
-    <label for="edit-status">Statut :</label>
-    <select id="edit-status">
-    <option value="À lire">À lire</option>
-    <option value="En cours">En cours</option>
-    <option value="Terminé">Terminé</option>
-    <option value="Abandonné">Abandonné</option>
-</select>
   </div>
 
-  <div class="edit-field">
-    <label for="edit-note">Note (sur 5) :</label>
-    <input type="number" id="edit-note" min="1" max="5">
-  </div>
-</div>
-
-<div class="edit-line">
-  <div class="edit-field">
-    <label for="edit-start">Début :</label>
-    <input type="date" id="edit-start">
-  </div>
-
-  <div class="edit-field">
-    <label for="edit-end">Fin :</label>
-    <input type="date" id="edit-end">
-  </div>
-</div>
-
-
-    <div class="edit-buttons">
-      <button id="edit-save">Enregistrer</button>
-      <button id="edit-cancel">Annuler</button>
-    </div>
-  </div>
-</div>
-</div>
-<script src="config.js"></script>
+  <script src="config.js"></script>
   <script src="script.js"></script>
-
 </body>
 </html>
-

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi des Sagas - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <h1>Suivi de mes Sagas</h1>
+
+    <!-- Indicateurs rapides -->
+    <div class="stats-overview">
+      <div class="stat-card">
+        <span class="stat-icon">📚</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-total">0</span>
+          <span class="stat-label">Total Sagas</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">📖</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-en-cours">0</span>
+          <span class="stat-label">En cours</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-a-commencer">0</span>
+          <span class="stat-label">À commencer</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-terminees">0</span>
+          <span class="stat-label">Terminées</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-tomes-restants">0</span>
+          <span class="stat-label">Tomes restants</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barre d'actions et filtres -->
+    <div class="saga-toolbar">
+      <button id="btn-nouvelle-saga" class="btn-primary">➕ Ajouter une saga</button>
+
+      <div class="filtres-bar">
+        <div class="filtre-groupe">
+          <label for="filtre-saga-statut">Mon statut :</label>
+          <select id="filtre-saga-statut">
+            <option value="Tous">Tous</option>
+            <option value="En cours">En cours</option>
+            <option value="À commencer">À commencer</option>
+            <option value="Terminée">Terminée</option>
+            <option value="En pause">En pause</option>
+            <option value="Abandonnée">Abandonnée</option>
+          </select>
+        </div>
+        <div class="filtre-groupe">
+          <input type="text" id="filtre-saga-texte" placeholder="Rechercher une saga, un auteur..." />
+        </div>
+      </div>
+    </div>
+
+    <!-- Grille des sagas -->
+    <div id="sagas-container" class="sagas-grid"></div>
+  </main>
+
+  <!-- Modal Ajout / Modification d'une Saga -->
+  <div id="saga-modal" class="popup" style="display: none;">
+    <div class="popup-content">
+      <span class="close-button" id="saga-modal-close">&times;</span>
+      <h2 id="saga-modal-title">Ajouter une saga</h2>
+
+      <form id="saga-form" onsubmit="return false;">
+        <div class="form-group" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+          <label for="saga-select-livre-source" style="color: var(--primary-dark);">⚡ Remplir automatiquement depuis un livre de ma bibliothèque :</label>
+          <select id="saga-select-livre-source">
+            <option value="">-- Choisir un livre existant (optionnel) --</option>
+          </select>
+          <small class="form-hint">Pré-remplit le titre, l'auteur, le genre et la couverture à partir de ce livre.</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label for="saga-input-titre">Titre de la saga * :</label>
+            <input type="text" id="saga-input-titre" placeholder="Ex: Harry Potter, Dune..." required />
+          </div>
+          <div class="form-group flex-2">
+            <label for="saga-input-auteur">Auteur * :</label>
+            <input type="text" id="saga-input-auteur" placeholder="Ex: J.K. Rowling..." required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="saga-input-genre">Genre :</label>
+            <input type="text" id="saga-input-genre" placeholder="Ex: Fantasy, Science-Fiction, Romance..." />
+          </div>
+          <div class="form-group flex-2">
+            <label for="saga-input-cover">Image de couverture (URL) :</label>
+            <input type="text" id="saga-input-cover" placeholder="https://..." />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="saga-input-statut-saga">Statut de la saga (parution) :</label>
+            <select id="saga-input-statut-saga">
+              <option value="Terminée">Terminée (saga complète)</option>
+              <option value="En cours">En cours de parution</option>
+              <option value="En pause">En pause / Indéterminée</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label for="saga-input-statut-perso">Mon statut de lecture :</label>
+            <select id="saga-input-statut-perso">
+              <option value="À commencer">À commencer</option>
+              <option value="En cours">En cours</option>
+              <option value="Terminée">Terminée</option>
+              <option value="En pause">En pause</option>
+              <option value="Abandonnée">Abandonnée</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="saga-input-total-tomes">Nombre total de tomes * :</label>
+            <input type="number" id="saga-input-total-tomes" min="1" value="3" required />
+          </div>
+          <div class="form-group flex-1">
+            <label for="saga-input-lus-tomes">Nombre de tomes déjà lus * :</label>
+            <input type="number" id="saga-input-lus-tomes" min="0" value="0" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="saga-input-prochain">Prochain tome à lire :</label>
+          <input type="text" id="saga-input-prochain" placeholder="Ex: Tome 1, Tome 3 : Le Prisonnier d'Azkaban..." />
+          <small class="form-hint">Indiquez le titre ou numéro du prochain tome à entamer.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="saga-input-notes">Notes / Remarques personnelles :</label>
+          <textarea id="saga-input-notes" rows="2" placeholder="Notes, spin-offs, tomes hors-série..."></textarea>
+        </div>
+
+        <div class="edit-buttons" style="margin-top: 25px;">
+          <button type="button" id="saga-btn-supprimer" class="delete-button" style="margin-right: auto; display: none;">Supprimer cette saga</button>
+          <button type="button" id="saga-btn-annuler" class="btn-secondary">Annuler</button>
+          <button type="submit" id="saga-btn-sauvegarder">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Associer un livre existant à une saga -->
+  <div id="associer-livre-modal" class="popup" style="display: none;">
+    <div class="popup-content popup-compact">
+      <span class="close-button" id="associer-modal-close">&times;</span>
+      <h3 style="margin-top: 0;">Associer un livre à la saga</h3>
+      <p id="associer-saga-nom" class="modal-highlight"></p>
+
+      <form id="associer-livre-form" onsubmit="return false;">
+        <div class="form-group">
+          <label for="associer-select-livre">Livre de ma bibliothèque :</label>
+          <select id="associer-select-livre" required>
+            <option value="">-- Sélectionner un livre --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="associer-input-tome">Numéro de tome dans cette saga :</label>
+          <input type="number" id="associer-input-tome" min="1" value="1" required />
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button type="button" id="associer-btn-annuler" class="btn-secondary">Annuler</button>
+          <button type="submit" id="associer-btn-valider">Associer ce livre</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+

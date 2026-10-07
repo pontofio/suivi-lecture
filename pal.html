@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ma PAL - Suivi de lectures</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -9,7 +10,7 @@
   <div id="menu-placeholder"></div>
 
   <main class="container">
-    <h1>Pile à Lire</h1>
+    <h1>Pile à Lire (PAL)</h1>
 
     <section id="roulette-section">
       <h2>Tirer ma prochaine lecture</h2>
@@ -28,33 +29,36 @@
   </main>
 
   <div id="confirm-pal-modal" class="popup" style="display: none;">
-    <div class="popup-content" style="max-width: 450px; text-align: center;">
-      <h3>Lancer cette lecture ?</h3>
-      <p id="modal-livre-titre" style="font-weight: bold; margin: 15px 0;"></p>
-      <p>Passer ce livre au statut "En cours" dès aujourd'hui ?</p>
-      <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
-        <button id="btn-valider-lecture">Valider</button>
-        <button id="btn-annuler-lecture" style="background-color: #eee;">Annuler</button>
+    <div class="popup-content popup-compact text-center">
+      <h3>🎉 Livre tiré au sort !</h3>
+      <p id="modal-livre-titre" class="modal-highlight"></p>
+      <p>Voulez-vous passer ce livre au statut <strong>"En cours"</strong> dès aujourd'hui ?</p>
+      <div class="modal-actions">
+        <button id="btn-valider-lecture">Valider la lecture</button>
+        <button id="btn-annuler-lecture" class="btn-secondary">Garder dans la PAL</button>
       </div>
     </div>
   </div>
 
-<div id="edit-popup" class="popup" style="display:none;">
+  <div id="edit-popup" class="popup" style="display:none;">
     <div class="popup-content">
       <span class="close-button" id="edit-close">&times;</span>
       <h2>Modifier le livre</h2>
-      <div class="edit-block">
-        <p id="edit-title" class="edit-title"></p>
-        <p id="edit-authors" class="edit-authors"></p>
+      
+      <div class="edit-header-details">
+        <img id="edit-cover-preview" class="popup-cover" src="" alt="Couverture">
+        <div class="edit-block edit-meta">
+          <h3 id="edit-title" class="edit-title"></h3>
+          <p id="edit-authors" class="edit-authors"></p>
+          <p><strong>Genre :</strong> <span id="edit-genre-text" class="edit-genre-text"></span></p>
+        </div>
       </div>
-      <div class="edit-block">
-        <label>Genre :</label>
-        <p id="edit-genre-text" class="edit-genre-text"></p>
-      </div>
+
       <div class="edit-block">
         <label>Résumé :</label>
         <div id="edit-desc-text" class="edit-description"></div>
       </div>
+
       <div class="edit-line">
         <div class="edit-field">
           <label for="edit-status">Statut :</label>
@@ -67,26 +71,50 @@
         </div>
         <div class="edit-field">
           <label for="edit-note">Note (sur 5) :</label>
-          <input type="number" id="edit-note" min="1" max="5">
+          <input type="number" id="edit-note" min="1" max="5" step="1" placeholder="Note de 1 à 5">
         </div>
       </div>
+
       <div class="edit-line">
         <div class="edit-field">
-          <label for="edit-start">Début :</label>
+          <label for="edit-start">Date de début :</label>
           <input type="date" id="edit-start">
         </div>
         <div class="edit-field">
-          <label for="edit-end">Fin :</label>
+          <label for="edit-end">Date de fin :</label>
           <input type="date" id="edit-end">
         </div>
       </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-saga">Saga associée :</label>
+          <select id="edit-saga">
+            <option value="">-- Aucune saga --</option>
+            <option value="__NEW__">➕ Créer une nouvelle saga...</option>
+          </select>
+        </div>
+
+        <div class="edit-field" id="edit-field-saga-tome" style="display: none;">
+          <label for="edit-saga-tome">Numéro de tome :</label>
+          <input type="number" id="edit-saga-tome" min="1" placeholder="Ex: 1, 2, 3...">
+        </div>
+      </div>
+
+      <div class="edit-field" id="edit-field-new-saga" style="display: none; margin-bottom: 12px;">
+        <label for="edit-new-saga-title">Nom de la nouvelle saga :</label>
+        <input type="text" id="edit-new-saga-title" placeholder="Ex: Harry Potter, Dune...">
+      </div>
+
       <div class="edit-buttons">
+        <button id="edit-delete" class="delete-button" style="margin-right: auto;">Supprimer ce livre</button>
+        <button id="edit-cancel" class="btn-secondary">Annuler</button>
         <button id="edit-save">Enregistrer</button>
-        <button id="edit-cancel">Annuler</button>
       </div>
     </div>
   </div>
-<script src="config.js"></script>
+
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
