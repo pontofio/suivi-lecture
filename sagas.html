@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi des Sagas - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <h1>Suivi de mes Sagas</h1>
+
+    <!-- Indicateurs rapides -->
+    <div class="stats-overview">
+      <div class="stat-card">
+        <span class="stat-icon">📚</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-total">0</span>
+          <span class="stat-label">Total Sagas</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">📖</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-en-cours">0</span>
+          <span class="stat-label">En cours</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-a-commencer">0</span>
+          <span class="stat-label">À commencer</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-sagas-terminees">0</span>
+          <span class="stat-label">Terminées</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-tomes-restants">0</span>
+          <span class="stat-label">Tomes restants</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barre d'actions et filtres -->
+    <div class="saga-toolbar">
+      <div class="saga-toolbar-buttons">
+        <button id="btn-creer-depuis-livre" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+          <span>📚</span> Créer une saga depuis ma bibliothèque
+        </button>
+        <button id="btn-nouvelle-saga" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+          <span>✏️</span> Créer manuellement
+        </button>
+      </div>
+
+      <div class="filtres-bar">
+        <div class="filtre-groupe">
+          <label for="filtre-saga-statut">Mon statut :</label>
+          <select id="filtre-saga-statut">
+            <option value="Tous">Tous</option>
+            <option value="En cours">En cours</option>
+            <option value="À commencer">À commencer</option>
+            <option value="Terminée">Terminée</option>
+            <option value="En pause">En pause</option>
+            <option value="Abandonnée">Abandonnée</option>
+          </select>
+        </div>
+        <div class="filtre-groupe">
+          <input type="text" id="filtre-saga-texte" placeholder="Rechercher une saga, un auteur..." />
+        </div>
+      </div>
+    </div>
+
+    <!-- Grille des sagas -->
+    <div id="sagas-container" class="sagas-grid"></div>
+  </main>
+
+  <!-- Modal Création / Modification d'une Saga -->
+  <div id="saga-modal" class="popup" style="display: none;">
+    <div class="popup-content popup-saga-modal">
+      <span class="close-button" id="saga-modal-close">&times;</span>
+      <h2 id="saga-modal-title" style="margin-top: 0; margin-bottom: 12px;">Ajouter une saga</h2>
+
+      <!-- Onglets de choix en haut de la modale -->
+      <div class="saga-tabs-nav" id="saga-tabs-nav">
+        <button type="button" class="saga-tab-btn active" id="tab-btn-livre">
+          📚 Depuis ma bibliothèque
+        </button>
+        <button type="button" class="saga-tab-btn" id="tab-btn-manuel">
+          ✏️ Saisie manuelle
+        </button>
+      </div>
+
+      <!-- VUE 1 : CRÉATION DEPUIS UN LIVRE EXISTANT -->
+      <div id="saga-view-livre" class="saga-tab-view">
+        <!-- Étape 1 : Choisir le livre dans la galerie -->
+        <div id="saga-picker-step-choix">
+          <p class="saga-picker-desc">
+            Cliquez sur un livre de votre bibliothèque pour pré-remplir automatiquement le titre, l'auteur, le genre, la couverture et le tome de la saga :
+          </p>
+          <div class="saga-picker-search-bar">
+            <input type="text" id="saga-picker-search" placeholder="🔍 Rechercher un livre par titre ou auteur..." />
+          </div>
+          <div id="saga-picker-books-grid" class="picker-books-grid">
+            <!-- Liste dynamique des livres avec couvertures -->
+          </div>
+        </div>
+
+        <!-- Étape 2 : Confirmation et personnalisation de la saga à partir du livre choisi -->
+        <div id="saga-picker-step-confirmer" style="display: none;">
+          <div class="saga-chosen-header">
+            <button type="button" id="saga-chosen-btn-retour" class="btn-text" style="color: var(--primary-dark); font-weight: 600; padding: 0; margin-bottom: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              ← Choisir un autre livre
+            </button>
+          </div>
+
+          <form id="saga-form-depuis-livre" onsubmit="return false;">
+            <div class="saga-book-recap-card">
+              <img id="saga-chosen-cover" src="" alt="Couverture" class="saga-chosen-cover-img" />
+              <div class="saga-chosen-details">
+                <span class="saga-chosen-badge">✓ Informations importées</span>
+                <h3 id="saga-chosen-title" class="saga-chosen-title"></h3>
+                <p id="saga-chosen-author" class="saga-chosen-author"></p>
+                <p id="saga-chosen-meta" class="saga-chosen-meta"></p>
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 16px;">
+              <div class="form-group flex-2">
+                <label for="saga-livre-titre">Nom de la saga * :</label>
+                <input type="text" id="saga-livre-titre" required />
+              </div>
+              <div class="form-group flex-2">
+                <label for="saga-livre-auteur">Auteur * :</label>
+                <input type="text" id="saga-livre-auteur" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="saga-livre-genre">Genre :</label>
+                <input type="text" id="saga-livre-genre" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="saga-livre-statut-saga">Statut de la saga :</label>
+                <select id="saga-livre-statut-saga">
+                  <option value="Terminée">Terminée (saga complète)</option>
+                  <option value="En cours">En cours de parution</option>
+                  <option value="En pause">En pause / Indéterminée</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label for="saga-livre-statut-perso">Mon statut :</label>
+                <select id="saga-livre-statut-perso">
+                  <option value="En cours">En cours</option>
+                  <option value="À commencer">À commencer</option>
+                  <option value="Terminée">Terminée</option>
+                  <option value="En pause">En pause</option>
+                  <option value="Abandonnée">Abandonnée</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="saga-livre-total-tomes">Nombre total de tomes * :</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="number" id="saga-livre-total-tomes" min="1" value="1" required style="flex: 1;" />
+                  <button type="button" id="btn-detecter-depuis-livre" class="btn-detect-inline" title="Rechercher le vrai nombre de tomes en ligne">🔍 Détecter</button>
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label for="saga-livre-lus-tomes">Nombre de tomes déjà lus :</label>
+                <input type="number" id="saga-livre-lus-tomes" min="0" value="0" required />
+              </div>
+              <div class="form-group flex-1">
+                <label for="saga-livre-tome-num">Associer ce livre comme Tome :</label>
+                <input type="number" id="saga-livre-tome-num" min="1" value="1" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="saga-livre-prochain">Prochain tome à lire :</label>
+              <input type="text" id="saga-livre-prochain" placeholder="Ex: Tome 2, Tome 3..." />
+            </div>
+
+            <input type="hidden" id="saga-livre-source-id" value="" />
+            <input type="hidden" id="saga-livre-cover-url" value="" />
+            <input type="hidden" id="saga-livre-notes" value="" />
+
+            <div class="edit-buttons" style="margin-top: 20px;">
+              <button type="button" id="saga-livre-btn-annuler" class="btn-secondary">Annuler</button>
+              <button type="submit" id="saga-livre-btn-valider" class="btn-primary" style="font-weight: 700;">✨ Créer la saga avec ce livre</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- VUE 2 : SAISIE MANUELLE OU MODIFICATION DE SAGA -->
+      <div id="saga-view-manuel" class="saga-tab-view" style="display: none;">
+        <form id="saga-form" onsubmit="return false;">
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="saga-input-titre">Titre de la saga * :</label>
+              <input type="text" id="saga-input-titre" placeholder="Ex: Harry Potter, Dune..." required />
+            </div>
+            <div class="form-group flex-2">
+              <label for="saga-input-auteur">Auteur * :</label>
+              <input type="text" id="saga-input-auteur" placeholder="Ex: J.K. Rowling..." required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="saga-input-genre">Genre :</label>
+              <input type="text" id="saga-input-genre" placeholder="Ex: Fantasy, Science-Fiction, Romance..." />
+            </div>
+            <div class="form-group flex-2">
+              <label for="saga-input-cover">Image de couverture (URL) :</label>
+              <input type="text" id="saga-input-cover" placeholder="https://..." />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="saga-input-statut-saga">Statut de la saga (parution) :</label>
+              <select id="saga-input-statut-saga">
+                <option value="Terminée">Terminée (saga complète)</option>
+                <option value="En cours">En cours de parution</option>
+                <option value="En pause">En pause / Indéterminée</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label for="saga-input-statut-perso">Mon statut de lecture :</label>
+              <select id="saga-input-statut-perso">
+                <option value="À commencer">À commencer</option>
+                <option value="En cours">En cours</option>
+                <option value="Terminée">Terminée</option>
+                <option value="En pause">En pause</option>
+                <option value="Abandonnée">Abandonnée</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="saga-input-total-tomes">Nombre total de tomes * :</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="number" id="saga-input-total-tomes" min="1" value="1" required style="flex: 1;" />
+                <button type="button" id="btn-detecter-manuel" class="btn-detect-inline" title="Rechercher le vrai nombre de tomes en ligne">🔍 Détecter</button>
+              </div>
+            </div>
+            <div class="form-group flex-1">
+              <label for="saga-input-lus-tomes">Nombre de tomes déjà lus * :</label>
+              <input type="number" id="saga-input-lus-tomes" min="0" value="0" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="saga-input-prochain">Prochain tome à lire :</label>
+            <input type="text" id="saga-input-prochain" placeholder="Ex: Tome 1, Tome 3 : Le Prisonnier d'Azkaban..." />
+          </div>
+
+          <div class="form-group">
+            <label for="saga-input-notes">Notes / Remarques personnelles :</label>
+            <textarea id="saga-input-notes" rows="2" placeholder="Notes, spin-offs, tomes hors-série..."></textarea>
+          </div>
+
+          <div class="edit-buttons" style="margin-top: 25px;">
+            <button type="button" id="saga-btn-supprimer" class="delete-button" style="margin-right: auto; display: none;">Supprimer cette saga</button>
+            <button type="button" id="saga-btn-annuler" class="btn-secondary">Annuler</button>
+            <button type="submit" id="saga-btn-sauvegarder">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Associer un livre existant à une saga -->
+  <div id="associer-livre-modal" class="popup" style="display: none;">
+    <div class="popup-content popup-saga-modal">
+      <span class="close-button" id="associer-modal-close">&times;</span>
+      <h3 style="margin-top: 0; margin-bottom: 4px;">Associer un livre à la saga</h3>
+      <p id="associer-saga-nom" class="modal-highlight" style="margin-top: 0; margin-bottom: 14px; font-weight: 600; color: var(--primary-dark);"></p>
+
+      <!-- Étape A : Recherche et galerie de livres -->
+      <div id="associer-step-galerie">
+        <p class="saga-picker-desc">Cliquez sur un livre de votre bibliothèque pour l'ajouter à cette saga :</p>
+        <div class="saga-picker-search-bar">
+          <input type="text" id="associer-search-input" placeholder="🔍 Rechercher dans ma bibliothèque par titre ou auteur..." />
+        </div>
+        <div id="associer-books-grid" class="picker-books-grid">
+          <!-- Grille des livres -->
+        </div>
+      </div>
+
+      <!-- Étape B : Confirmation de l'association avec numéro de tome -->
+      <div id="associer-step-confirm" style="display: none;">
+        <button type="button" id="associer-btn-rechoisir" class="btn-text" style="color: var(--primary-dark); font-weight: 600; padding: 0; margin-bottom: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          ← Choisir un autre livre
+        </button>
+
+        <form id="associer-livre-form" onsubmit="return false;">
+          <div class="saga-book-recap-card">
+            <img id="associer-confirm-cover" src="" alt="Couverture" class="saga-chosen-cover-img" />
+            <div class="saga-chosen-details">
+              <strong id="associer-confirm-title" class="saga-chosen-title"></strong>
+              <p id="associer-confirm-author" class="saga-chosen-author"></p>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label for="associer-input-tome">Numéro de tome dans cette saga * :</label>
+            <input type="number" id="associer-input-tome" min="1" value="1" required />
+            <small class="form-hint">Indiquez à quel tome de la saga ce livre correspond.</small>
+          </div>
+
+          <input type="hidden" id="associer-book-id-hidden" value="" />
+
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" id="associer-btn-annuler" class="btn-secondary">Annuler</button>
+            <button type="submit" id="associer-btn-valider" class="btn-primary">Associer ce livre</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma PAL - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+      <h1 style="margin: 0;">Pile à Lire (PAL)</h1>
+      <button id="btn-sync-goodreads" class="btn-primary" style="background: #78350f; border-color: #78350f; display: inline-flex; align-items: center; gap: 6px;">
+        <span>📚</span> Synchroniser avec Goodreads
+      </button>
+    </div>
+
+    <section id="roulette-section">
+      <h2>Tirer ma prochaine lecture</h2>
+      <div id="roulette-container">
+        <div id="fleche-roue">▼</div>
+        <canvas id="wheel-canvas" width="320" height="320"></canvas>
+      </div>
+      <button id="spin-btn">Tourner la roue</button>
+      <div id="pal-selection-message"></div>
+    </section>
+
+    <section>
+      <h2>Mes livres à lire (<span id="pal-count">0</span>)</h2>
+      <div id="pal-library" class="grid-container"></div>
+    </section>
+  </main>
+
+  <div id="confirm-pal-modal" class="popup" style="display: none;">
+    <div class="popup-content popup-compact text-center">
+      <h3>🎉 Livre tiré au sort !</h3>
+      <p id="modal-livre-titre" class="modal-highlight"></p>
+      <p>Voulez-vous passer ce livre au statut <strong>"En cours"</strong> dès aujourd'hui ?</p>
+      <div class="modal-actions">
+        <button id="btn-valider-lecture">Valider la lecture</button>
+        <button id="btn-annuler-lecture" class="btn-secondary">Garder dans la PAL</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-popup" class="popup" style="display:none;">
+    <div class="popup-content">
+      <span class="close-button" id="edit-close">&times;</span>
+      <h2>Modifier le livre</h2>
+      
+      <div class="edit-header-details">
+        <img id="edit-cover-preview" class="popup-cover" src="" alt="Couverture">
+        <div class="edit-block edit-meta">
+          <h3 id="edit-title" class="edit-title"></h3>
+          <p id="edit-authors" class="edit-authors"></p>
+          <p><strong>Genre :</strong> <span id="edit-genre-text" class="edit-genre-text"></span></p>
+        </div>
+      </div>
+
+      <div class="edit-block">
+        <label>Résumé :</label>
+        <div id="edit-desc-text" class="edit-description"></div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-status">Statut :</label>
+          <select id="edit-status">
+            <option value="À lire">À lire</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Abandonné">Abandonné</option>
+          </select>
+        </div>
+        <div class="edit-field">
+          <label for="edit-note">Note (sur 5) :</label>
+          <input type="number" id="edit-note" min="1" max="5" step="1" placeholder="Note de 1 à 5">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-start">Date de début :</label>
+          <input type="date" id="edit-start">
+        </div>
+        <div class="edit-field">
+          <label for="edit-end">Date de fin :</label>
+          <input type="date" id="edit-end">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-saga">Saga associée :</label>
+          <select id="edit-saga">
+            <option value="">-- Aucune saga --</option>
+            <option value="__NEW__">➕ Créer une nouvelle saga...</option>
+          </select>
+        </div>
+
+        <div class="edit-field" id="edit-field-saga-tome" style="display: none;">
+          <label for="edit-saga-tome">Numéro de tome :</label>
+          <input type="number" id="edit-saga-tome" min="1" placeholder="Ex: 1, 2, 3...">
+        </div>
+      </div>
+
+      <div class="edit-field" id="edit-field-new-saga" style="display: none; margin-bottom: 12px;">
+        <label for="edit-new-saga-title">Nom de la nouvelle saga :</label>
+        <input type="text" id="edit-new-saga-title" placeholder="Ex: Harry Potter, Dune...">
+      </div>
+
+      <div class="edit-buttons">
+        <button id="edit-delete" class="delete-button" style="margin-right: auto;">Supprimer ce livre</button>
+        <button id="edit-cancel" class="btn-secondary">Annuler</button>
+        <button id="edit-save">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Synchronisation Goodreads -->
+  <div id="goodreads-modal" class="popup" style="display: none;">
+    <div class="popup-content popup-compact" style="max-width: 640px;">
+      <span class="close-button" id="goodreads-modal-close">&times;</span>
+      <h2 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+        <span>📚</span> Synchroniser avec Goodreads
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: -6px; margin-bottom: 14px;">
+        Importez ou synchronisez vos lectures et votre PAL complète directement depuis Goodreads.
+      </p>
+
+      <!-- Navigation par onglets -->
+      <div class="goodreads-tabs-nav">
+        <button type="button" class="goodreads-tab-btn active" id="goodreads-tab-btn-csv">
+          📁 Fichier Export (.csv) <span class="badge-recommande">Recommandé & Illimité</span>
+        </button>
+        <button type="button" class="goodreads-tab-btn" id="goodreads-tab-btn-url">
+          🔗 Lien / Profil RSS
+        </button>
+      </div>
+
+      <!-- ONGLET 1 : IMPORT EXPORT GOODREADS (.CSV) -->
+      <div id="goodreads-tab-view-csv" class="goodreads-tab-view">
+        <div class="goodreads-csv-guide">
+          <div class="guide-step">
+            <span class="step-num">1</span>
+            <div class="step-text">
+              Téléchargez votre export depuis Goodreads en 1 clic :<br>
+              <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener noreferrer" class="link-goodreads-export">
+                Ouvrir la page d'export Goodreads ↗
+              </a>
+              <span class="step-sub">Sur la page, cliquez sur le bouton <em>« Export Library »</em> pour télécharger votre fichier <code>goodreads_library_export.csv</code>.</span>
+            </div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">2</span>
+            <div class="step-text">
+              Glissez-déposez le fichier CSV ci-dessous (ou cliquez pour parcourir) :
+            </div>
+          </div>
+        </div>
+
+        <div id="goodreads-dropzone" class="goodreads-dropzone">
+          <div id="dropzone-idle">
+            <div class="dropzone-icon">📥</div>
+            <p class="dropzone-text"><strong>Glissez votre fichier CSV ici</strong> ou cliquez pour parcourir</p>
+            <p class="dropzone-sub">Fichier accepté : <code>goodreads_library_export.csv</code> (100% de vos livres, PAL & dates)</p>
+          </div>
+          <input type="file" id="goodreads-file-input" accept=".csv" style="display: none;" />
+          <div id="goodreads-file-selected" style="display: none;" class="file-selected-box">
+            <span style="font-size: 1.5rem;">📄</span>
+            <div style="flex: 1; text-align: left; overflow: hidden;">
+              <strong id="goodreads-file-name" style="color: #1e293b; font-size: 0.92rem; display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">goodreads_library_export.csv</strong>
+              <small id="goodreads-file-size" style="color: #64748b; font-size: 0.8rem;"></small>
+            </div>
+            <button type="button" id="goodreads-file-remove" class="btn-remove-file" title="Changer de fichier">✕ Retirer</button>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+            <input type="checkbox" id="goodreads-csv-check-sagas" checked style="width: auto; margin: 0;" />
+            <span>Détecter et associer automatiquement les sagas identifiées</span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 6px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+            <input type="checkbox" id="goodreads-csv-check-nettoyer-pal" checked style="width: auto; margin: 0;" />
+            <span>🧹 Vérifier ma PAL et détecter les livres supprimés de Goodreads (ménage)</span>
+          </label>
+        </div>
+
+        <div class="form-group" style="margin-top: 6px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+            <input type="checkbox" id="goodreads-csv-check-covers" checked style="width: auto; margin: 0;" />
+            <span>🖼 Récupérer les couvertures de livres (via ISBN / Open Library)</span>
+          </label>
+        </div>
+
+        <!-- Zone d'état et barre de progression CSV -->
+        <div id="goodreads-csv-sync-status" class="sync-status-box" style="display: none; margin-top: 15px;">
+          <div class="sync-spinner"></div>
+          <div class="sync-status-text">
+            <strong id="goodreads-csv-sync-step">Traitement du fichier Goodreads...</strong>
+            <p id="goodreads-csv-sync-details" style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;"></p>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px;">
+          <button type="button" class="btn-secondary goodreads-btn-annuler">Annuler</button>
+          <button type="button" id="goodreads-btn-lancer-csv" class="btn-primary" disabled>
+            🚀 Importer tous mes livres Goodreads
+          </button>
+        </div>
+      </div>
+
+      <!-- ONGLET 2 : SYNCHRONISATION VIA LIEN PUBLIC RSS -->
+      <div id="goodreads-tab-view-url" class="goodreads-tab-view" style="display: none;">
+        <div class="goodreads-rss-warning">
+          <span style="font-size: 1.2rem;">ℹ️</span>
+          <div>
+            <strong>Important :</strong> Goodreads restreint ses flux publics RSS à 10 livres pour les outils externes. Si vous avez plus de 10 livres ou si des livres manquent, utilisez l'onglet <strong>📁 Fichier Export (.csv)</strong> qui est 100% complet et sans limite !
+          </div>
+        </div>
+
+        <form id="goodreads-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="goodreads-input-url">Lien de votre profil Goodreads ou identifiant * :</label>
+            <input type="text" id="goodreads-input-url" placeholder="https://www.goodreads.com/user/show/12345678-nom ou identifiant numérique" />
+            <small class="form-hint">
+              Exemple : <code>https://www.goodreads.com/user/show/12345678-pseudo</code> ou juste <code>12345678</code>.
+            </small>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="goodreads-select-shelf">Liste / Étagère :</label>
+              <select id="goodreads-select-shelf">
+                <option value="all">Toutes (Lus, En cours, À lire)</option>
+                <option value="read">Livres lus (read)</option>
+                <option value="currently-reading">En cours de lecture</option>
+                <option value="to-read" selected>À lire (to-read / PAL)</option>
+              </select>
+            </div>
+
+            <div class="form-group flex-1">
+              <label for="goodreads-select-limit">Nombre max de livres :</label>
+              <select id="goodreads-select-limit">
+                <option value="20">20 livres récents</option>
+                <option value="50">50 livres récents</option>
+                <option value="100">100 livres</option>
+                <option value="200">200 livres</option>
+                <option value="1000" selected>Tous les livres disponibles</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+              <input type="checkbox" id="goodreads-check-sagas" checked style="width: auto; margin: 0;" />
+              <span>Détecter et associer automatiquement les sagas identifiées</span>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-top: 6px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.88rem;">
+              <input type="checkbox" id="goodreads-check-nettoyer-pal" checked style="width: auto; margin: 0;" />
+              <span>🧹 Vérifier ma PAL et détecter les livres supprimés (sécurisé anti-faux positifs)</span>
+            </label>
+          </div>
+
+          <!-- Zone d'état et barre de progression -->
+          <div id="goodreads-sync-status" class="sync-status-box" style="display: none; margin-top: 15px;">
+            <div class="sync-spinner"></div>
+            <div class="sync-status-text">
+              <strong id="goodreads-sync-step">Connexion à Goodreads...</strong>
+              <p id="goodreads-sync-details" style="margin: 2px 0 0 0; font-size: 0.8rem; color: #64748b;"></p>
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="btn-secondary goodreads-btn-annuler">Annuler</button>
+            <button type="submit" id="goodreads-btn-lancer" class="btn-primary">Lancer la synchronisation via lien</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nettoyage / Disparitions de la PAL -->
+  <div id="modal-nettoyage-pal" class="popup" style="display: none;">
+    <div class="popup-content popup-saga-modal" style="max-width: 650px;">
+      <span class="close-button" id="nettoyage-pal-close">&times;</span>
+      <h2 style="margin-top: 0; display: flex; align-items: center; gap: 8px; color: #b91c1c;">
+        <span>🧹</span> Nettoyage de votre PAL
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: -4px; margin-bottom: 12px;">
+        Les livres ci-dessous étaient dans votre PAL locale (« À lire »), mais <strong>ne figurent plus dans votre liste Goodreads</strong>.
+      </p>
+
+      <div class="nettoyage-alert-box">
+        🛡 <strong>Sécurité :</strong> Aucun livre n'est coché par défaut. Cochez uniquement les livres que vous avez réellement retirés de Goodreads et que vous souhaitez effacer de votre PAL locale. En cas de doute, cliquez sur <em>« Conserver tous mes livres »</em>.
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="nettoyage-btn-tout-cocher" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 8px;">
+            Tout cocher
+          </button>
+          <button type="button" id="nettoyage-btn-tout-decocher" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 8px;">
+            Tout décocher
+          </button>
+        </div>
+        <span id="nettoyage-count-badge" style="font-size: 0.82rem; font-weight: 600; color: #64748b;"></span>
+      </div>
+
+      <div id="nettoyage-books-list" class="nettoyage-books-container">
+        <!-- Livres générés dynamiquement -->
+      </div>
+
+      <div class="modal-actions" style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 0;">
+        <button type="button" id="nettoyage-btn-garder" class="btn-secondary" style="margin-right: auto;">
+          🛡 Conserver tous ces livres
+        </button>
+        <button type="button" id="nettoyage-btn-supprimer" class="delete-button" style="font-weight: 700;">
+          🗑 Supprimer les livres sélectionnés (<span id="nettoyage-sel-count">0</span>)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

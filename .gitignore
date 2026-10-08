@@ -1,0 +1,10 @@
+# Fichiers contenant des clés secrètes
+config.js
+.env
+
+# Fichiers d'export personnels (optionnel)
+*.csv
+
+# Fichiers système
+.DS_Store
+Thumbs.db

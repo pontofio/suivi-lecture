@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accueil - Suivi de lectures</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="menu-placeholder"></div>
+
+  <main class="container">
+    <h1>Tableau de bord lecture</h1>
+
+    <!-- Cartes de statistiques rapides -->
+    <div class="stats-overview">
+      <div class="stat-card">
+        <span class="stat-icon">📚</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-total">0</span>
+          <span class="stat-label">Total livres</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">📖</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-en-cours">0</span>
+          <span class="stat-label">En cours</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-pal">0</span>
+          <span class="stat-label">Pile à lire</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">✅</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-termines">0</span>
+          <span class="stat-label">Terminés</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-icon">⭐</span>
+        <div class="stat-details">
+          <span class="stat-number" id="stat-moyenne">-</span>
+          <span class="stat-label">Note moyenne</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard">
+      <!-- Partie gauche : challenge & graphiques -->
+      <div class="dashboard-left">
+        <div class="challenge-card">
+          <div class="challenge-header">
+            <h2>🏆 Challenge lecture <span id="challenge-annee-titre"></span></h2>
+            <div class="challenge-goal-wrapper">
+              <span>Objectif :</span>
+              <strong id="challenge-objectif-text">30</strong> livres
+              <button id="btn-modifier-challenge" class="btn-text" title="Modifier l'objectif">✏️</button>
+            </div>
+          </div>
+          
+          <div id="challenge-edit-box" style="display: none; margin-bottom: 10px;">
+            <input type="number" id="input-challenge-objectif" min="1" max="500" value="30" style="width: 80px; padding: 4px 8px;">
+            <button id="btn-sauvegarder-challenge" style="padding: 4px 10px; font-size: 0.85rem;">Valider</button>
+          </div>
+
+          <div class="progress-info">
+            <span>Livres lus en <span id="challenge-annee-label"></span> : <strong id="progression-challenge">0</strong></span>
+            <span id="challenge-pourcentage">0%</span>
+          </div>
+          <div class="progress-bar-container">
+            <div id="challenge-bar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div class="graph-container">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h2>Livres lus par mois</h2>
+              <select id="select-annee-mois" class="chart-select" title="Filtrer par année"></select>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="graph-mois"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <h2>Livres lus par année</h2>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="graph-annee"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Partie droite : mini bibliothèque des dernières lectures -->
+      <div class="dashboard-right">
+        <h2>Mes dernières lectures</h2>
+        <div id="derniers-livres" class="grid-container"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Popup d'édition pour les dernières lectures -->
+  <div id="edit-popup" class="popup" style="display:none;">
+    <div class="popup-content">
+      <span class="close-button" id="edit-close">&times;</span>
+      <h2>Détails du livre</h2>
+
+      <div class="edit-header-details">
+        <img id="edit-cover-preview" class="popup-cover" src="" alt="Couverture">
+        <div class="edit-block edit-meta">
+          <h3 id="edit-title" class="edit-title"></h3>
+          <p id="edit-authors" class="edit-authors"></p>
+          <p><strong>Genre :</strong> <span id="edit-genre-text" class="edit-genre-text"></span></p>
+        </div>
+      </div>
+
+      <div class="edit-block">
+        <label>Résumé :</label>
+        <div id="edit-desc-text" class="edit-description"></div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-status">Statut :</label>
+          <select id="edit-status">
+            <option value="À lire">À lire</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+            <option value="Abandonné">Abandonné</option>
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label for="edit-note">Note (sur 5) :</label>
+          <input type="number" id="edit-note" min="1" max="5" step="1" placeholder="Note de 1 à 5">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-start">Date de début :</label>
+          <input type="date" id="edit-start">
+        </div>
+
+        <div class="edit-field">
+          <label for="edit-end">Date de fin :</label>
+          <input type="date" id="edit-end">
+        </div>
+      </div>
+
+      <div class="edit-line">
+        <div class="edit-field">
+          <label for="edit-saga">Saga associée :</label>
+          <select id="edit-saga">
+            <option value="">-- Aucune saga --</option>
+            <option value="__NEW__">➕ Créer une nouvelle saga...</option>
+          </select>
+        </div>
+
+        <div class="edit-field" id="edit-field-saga-tome" style="display: none;">
+          <label for="edit-saga-tome">Numéro de tome :</label>
+          <input type="number" id="edit-saga-tome" min="1" placeholder="Ex: 1, 2, 3...">
+        </div>
+      </div>
+
+      <div class="edit-field" id="edit-field-new-saga" style="display: none; margin-bottom: 12px;">
+        <label for="edit-new-saga-title">Nom de la nouvelle saga :</label>
+        <input type="text" id="edit-new-saga-title" placeholder="Ex: Harry Potter, Dune...">
+      </div>
+
+      <div class="edit-buttons">
+        <button id="edit-delete" class="delete-button" style="margin-right: auto;">Supprimer ce livre</button>
+        <button id="edit-cancel" class="btn-secondary">Annuler</button>
+        <button id="edit-save">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
