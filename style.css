@@ -1035,6 +1035,113 @@ button:disabled,
   color: var(--primary-dark);
 }
 
+/* Bannières de complétion et statut */
+.saga-banner {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.saga-completed-banner {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.saga-caught-up-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  flex-wrap: wrap;
+}
+
+.saga-caught-up-text {
+  flex: 1;
+  min-width: 170px;
+  font-weight: 500;
+}
+
+.btn-saga-finish-now {
+  background-color: #4f46e5;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.btn-saga-finish-now:hover {
+  background-color: #4338ca;
+}
+
+.btn-detect-tomes-card,
+.btn-detect-action {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-detect-tomes-card:hover,
+.btn-detect-action:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.btn-detect-inline {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-detect-inline:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.saga-next-box-completed {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  border-color: #a7f3d0 !important;
+}
+
+.saga-next-box-completed .saga-next-text {
+  color: #065f46 !important;
+}
+
+.saga-next-box-completed .saga-next-title {
+  color: #047857 !important;
+}
+
+.progress-bar-fill.fill-completed {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+}
+
 /* Encadré Prochain Tome */
 .saga-next-box {
   background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
@@ -1236,6 +1343,305 @@ button:disabled,
   align-self: flex-start;
 }
 
+/* === MODAL & STYLES SYNCHRONISATION GOODREADS === */
+.sync-status-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary-dark);
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.sync-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary-dark);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sync-status-text strong {
+  display: block;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+/* === SÉLECTEUR & MODALES SAGAS === */
+.saga-toolbar-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.popup-saga-modal {
+  max-width: 820px !important;
+  width: 95% !important;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.saga-tabs-nav {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.saga-tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saga-tab-btn:hover {
+  color: var(--primary-dark);
+  background-color: #f5f3ff;
+}
+
+.saga-tab-btn.active {
+  color: #ffffff;
+  background-color: var(--primary-dark);
+  box-shadow: 0 2px 4px rgba(138, 58, 185, 0.2);
+}
+
+.saga-tab-view {
+  width: 100%;
+}
+
+.saga-picker-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.saga-picker-search-bar {
+  margin-bottom: 14px;
+}
+
+.saga-picker-search-bar input {
+  width: 100%;
+}
+
+/* Fiche récapitulative du livre choisi pour la saga */
+.saga-book-recap-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.06);
+}
+
+.saga-chosen-cover-img {
+  width: 60px;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+  background-color: #e2e8f0;
+}
+
+.saga-chosen-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.saga-chosen-badge {
+  display: inline-block;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.saga-chosen-title {
+  font-size: 1.05rem;
+  color: #1e293b;
+  margin: 0 0 3px 0;
+  line-height: 1.3;
+}
+
+.saga-chosen-author {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 4px 0;
+}
+
+.saga-chosen-meta {
+  font-size: 0.8rem;
+  color: var(--primary-dark);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* === MODAL POPUP DU SÉLECTEUR GRAPHIQUE === */
+.popup-picker-content {
+  max-width: 860px !important;
+  width: 95% !important;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px !important;
+}
+
+.picker-header {
+  margin-bottom: 14px;
+}
+
+.picker-header h2 {
+  margin-bottom: 4px;
+  font-size: 1.4rem;
+}
+
+.picker-subtitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.picker-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.picker-search-wrapper {
+  flex: 2;
+  min-width: 200px;
+}
+
+.picker-search-wrapper input {
+  width: 100%;
+}
+
+.picker-filter-wrapper {
+  flex: 1;
+  min-width: 150px;
+}
+
+.picker-books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+  overflow-y: auto;
+  max-height: 480px;
+  padding: 6px 4px;
+  margin: 0 -4px;
+}
+
+.picker-book-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  text-align: left;
+}
+
+.picker-book-card:hover {
+  border-color: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(138, 58, 185, 0.15);
+}
+
+.picker-book-cover-wrap {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.picker-book-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.picker-book-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #cbd5e1;
+}
+
+.picker-book-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 3px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.picker-book-author {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin: 0 0 6px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-book-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.picker-count {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 900px) {
   .dashboard {
@@ -1290,4 +1696,273 @@ button:disabled,
   .edit-buttons button {
     width: 100%;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Nettoyage PAL Modal (Livres supprimés de Goodreads)
+   -------------------------------------------------------------------------- */
+.nettoyage-books-container {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding-right: 4px;
+}
+
+.nettoyage-book-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.nettoyage-book-item:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.nettoyage-book-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #dc2626;
+  flex-shrink: 0;
+}
+
+.nettoyage-book-cover {
+  width: 40px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.nettoyage-book-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.nettoyage-book-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nettoyage-book-author {
+  margin: 2px 0 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.nettoyage-book-tag {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Onglets et import CSV Modal Goodreads
+   -------------------------------------------------------------------------- */
+.goodreads-tabs-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.goodreads-tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.goodreads-tab-btn:hover {
+  color: var(--primary-dark);
+  background-color: #f5f3ff;
+}
+
+.goodreads-tab-btn.active {
+  color: #ffffff;
+  background-color: var(--primary-dark);
+  box-shadow: 0 2px 4px rgba(138, 58, 185, 0.2);
+}
+
+.badge-recommande {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.goodreads-tab-btn.active .badge-recommande {
+  background: #ffffff;
+  color: var(--primary-dark);
+}
+
+.goodreads-csv-guide {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.step-num {
+  background: var(--primary-dark);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-text {
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.link-goodreads-export {
+  display: inline-block;
+  margin: 3px 0;
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.link-goodreads-export:hover {
+  color: var(--primary);
+}
+
+.step-sub {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.goodreads-dropzone {
+  border: 2px dashed #cbd5e1;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.goodreads-dropzone:hover,
+.goodreads-dropzone.dragover {
+  border-color: var(--primary-dark);
+  background-color: #faf5ff;
+}
+
+.dropzone-icon {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.dropzone-text {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #1e293b;
+}
+
+.dropzone-sub {
+  margin: 4px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.file-selected-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.btn-remove-file {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.btn-remove-file:hover {
+  background: #fef2f2;
+}
+
+.goodreads-rss-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: #92400e;
+  line-height: 1.4;
+  margin-bottom: 14px;
+}
+
+.nettoyage-alert-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  line-height: 1.35;
 }
