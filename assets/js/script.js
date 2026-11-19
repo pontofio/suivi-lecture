@@ -1191,22 +1191,21 @@ function afficherDernieresLectures(manager) {
   });
 }
 
-// Fonction intelligente pour traiter l'import (Compatible Goodreads & Format Perso)
-// Fonction d'import avec barre de progression animée
+// Fonction d'import avec barre de progression animée (Version Corrigée)
 async function gerrerImportCSV(event, manager) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 1. Création dynamique de la popup de progression
+    // 1. Création ou récupération de la popup de progression
     const loaderId = "import-loader-popup";
     let loaderPopup = document.getElementById(loaderId);
     
     if (!loaderPopup) {
         loaderPopup = document.createElement("div");
         loaderPopup.id = loaderId;
-        loaderPopup.className = "popup"; // On garde votre style de base (fond flouté)
-        loaderPopup.style.display = "flex"; // Flex pour centrer
-        loaderPopup.style.zIndex = "2000";  // Au-dessus de tout
+        loaderPopup.className = "popup"; 
+        loaderPopup.style.display = "flex"; 
+        loaderPopup.style.zIndex = "2000";
         loaderPopup.innerHTML = `
             <div class="popup-content loader-container">
                 <h3 class="loader-title">Importation en cours...</h3>
@@ -1222,7 +1221,7 @@ async function gerrerImportCSV(event, manager) {
         loaderPopup.style.display = "flex";
     }
 
-    // Références aux éléments à mettre à jour
+    // Références aux éléments
     const fillEl   = document.getElementById("loader-fill");
     const statusEl = document.getElementById("loader-status");
     const bookEl   = document.getElementById("loader-book");
@@ -1233,10 +1232,12 @@ async function gerrerImportCSV(event, manager) {
     bookEl.textContent = "";
 
     const reader = new FileReader();
+    
+    // NOTE : On utilise une fonction async ici pour pouvoir utiliser 'await'
     reader.onload = async e => {
       try {
         const text  = new TextDecoder("utf-8").decode(e.target.result).normalize("NFC");
-        const lines = text.trim().split(/\r\n|\n|\r/); // Découpage robuste
+        const lines = text.trim().split(/\r\n|\n|\r/); 
 
         if (lines.length <= 1) {
           loaderPopup.style.display = "none";
@@ -1254,16 +1255,23 @@ async function gerrerImportCSV(event, manager) {
         let nouveauxAjoutes = 0;
         let livresActuels = manager.livres;
 
-        // Boucle sur chaque ligne
+        // -----------------------------------------------------------
+        // DÉBUT DE LA BOUCLE DE TRAITEMENT
+        // -----------------------------------------------------------
         for (const line of lines) {
             livresTraites++;
             
-            // --- MISE À JOUR DE LA PROGRESSION ---
+            // 1. MISE À JOUR VISUELLE (Barre + Texte)
+            // On le fait au tout début de la boucle pour être sûr que ça bouge
             const pourcentage = Math.round((livresTraites / totalLivres) * 100);
             fillEl.style.width = `${pourcentage}%`;
             statusEl.textContent = `Traitement : ${livresTraites} sur ${totalLivres}`;
             
-            // --- LOGIQUE D'IMPORT (Identique à avant) ---
+            // 2. PAUSE OBLIGATOIRE (Le "Respiration" du navigateur)
+            // On attend 10ms pour laisser le navigateur dessiner la barre
+            await new Promise(r => setTimeout(r, 10));
+
+            // 3. ANALYSE DE LA LIGNE
             const cols = parseCSVLine(line);
             if (cols.length < 3) continue;
 
@@ -1298,7 +1306,7 @@ async function gerrerImportCSV(event, manager) {
             
             if (!titre || !auteurs) continue;
 
-            // Afficher le titre du livre en cours pour l'effet "ça bosse"
+            // Mise à jour du petit texte (titre du livre en cours)
             bookEl.textContent = titre;
 
             // Vérification doublon
@@ -1308,7 +1316,7 @@ async function gerrerImportCSV(event, manager) {
             );
 
             if (!existe) {
-                // Appel API (C'est ça qui prend du temps)
+                // Si c'est un nouveau livre, on l'ajoute (avec appel API éventuel)
                 const enrichi = await enrichirLivreViaAPI(titre, auteurs);
                 
                 const newBook = {
@@ -1327,20 +1335,17 @@ async function gerrerImportCSV(event, manager) {
                 if (ok) nouveauxAjoutes++;
             }
             
-            // Petite pause pour laisser le temps au navigateur de rafraîchir l'UI
-            // (sinon la boucle bloque tout et on ne voit pas l'anim)
-            
-        }
+        } 
+        // -----------------------------------------------------------
+        // FIN DE LA BOUCLE
+        // -----------------------------------------------------------
 
-        await new Promise(r => setTimeout(r, 10)); 
-
-        // FIN
+        // Fermeture de la popup
         loaderPopup.style.display = "none";
         
         if (nouveauxAjoutes > 0) {
             afficherMessage(`Import terminé ! ${nouveauxAjoutes} livres ajoutés.`, "succes");
             await manager.chargerLivres();
-             // Rafraichir le tri si on est sur la page bibliothèque
             const selectTri = document.getElementById("tri-critere");
             if(selectTri) manager.trierLivres(selectTri.value);
         } else {
